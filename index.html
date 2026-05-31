@@ -2362,445 +2362,114 @@ select{
 
   <div class="tab-panel" id="tab-tracabilite" style="display:none">
 
-    <!-- TABS INTERNES -->
-    <div style="display:flex;gap:4px;margin-bottom:16px;background:var(--s2);border-radius:10px;padding:4px;flex-wrap:wrap;">
-      <button class="tab active" id="trac-tab-semaine" onclick="switchTracTab('semaine',this)" style="flex:1;font-size:11px;min-width:60px">💳 Semaine</button>
-      <button class="tab" id="trac-tab-scores" onclick="switchTracTab('scores',this)" style="flex:1;font-size:11px;min-width:60px">🏅 Scores</button>
-      <button class="tab" id="trac-tab-alertes" onclick="switchTracTab('alertes',this)" style="flex:1;font-size:11px;min-width:60px">🚨 Alertes</button>
-      <button class="tab" id="trac-tab-retards" onclick="switchTracTab('retards',this)" style="flex:1;font-size:11px;min-width:60px">⚠️ Retards</button>
-      <button class="tab" id="trac-tab-historique" onclick="switchTracTab('historique',this)" style="flex:1;font-size:11px;min-width:60px">📜 Historique</button>
-      <button class="tab" id="trac-tab-benef" onclick="switchTracTab('benef',this)" style="flex:1;font-size:11px;min-width:60px">🏆 Bénéficiaire</button>
-    </div>
-
-    <!-- RÉSUMÉ -->
-    <div class="trac-summary-bar" style="grid-template-columns:repeat(4,1fr);margin-bottom:14px">
-      <div class="trac-sum-card">
-        <div class="trac-sum-val" id="tr-collected" style="color:var(--green)">0</div>
-        <div class="trac-sum-lbl">Collecté</div>
-      </div>
-      <div class="trac-sum-card">
-        <div class="trac-sum-val" id="tr-remaining" style="color:var(--red)">0</div>
-        <div class="trac-sum-lbl">Manquant</div>
-      </div>
-      <div class="trac-sum-card">
-        <div class="trac-sum-val" id="tr-pct" style="color:var(--gold)">0%</div>
-        <div class="trac-sum-lbl">Complété</div>
-      </div>
-      <div class="trac-sum-card">
-        <div class="trac-sum-val" id="tr-late-count" style="color:var(--red)">0</div>
-        <div class="trac-sum-lbl">En retard</div>
-      </div>
-    </div>
-
-    <!-- ── SCORES & TRANSPARENCE ── -->
-    <div id="trac-panel-scores" style="display:none">
-      <div class="trac-week-card">
-        <div class="trac-week-title" style="margin-bottom:4px">🏅 Tableau de confiance — Scores des membres</div>
-        <div class="trac-week-sub" style="margin-bottom:16px">Score de ponctualité · Taux de paiement · Historique · Badge de confiance</div>
-
-        <!-- Filtres -->
-        <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap">
-          <select class="db-filter" id="score-filter-groupe" onchange="renderScores()">
-            <option value="">Tous les groupes</option>
-            <option value="anc">⭐ Anciens</option>
-            <option value="nouv">🆕 Nouveaux</option>
-          </select>
-          <select class="db-filter" id="score-filter-sort" onchange="renderScores()">
-            <option value="score">Trier par score</option>
-            <option value="nom">Trier par nom</option>
-            <option value="retards">Trier par retards</option>
-          </select>
-        </div>
-
-        <div id="scores-list"></div>
-      </div>
-    </div>
-
-    <!-- ── ALERTES INTELLIGENTES ── -->
-    <div id="trac-panel-alertes" style="display:none">
-
-      <!-- Alerte 20h -->
-      <div style="
-        background:linear-gradient(135deg,#1A0800,#120500);
-        border:2px solid rgba(249,115,22,.4);border-radius:18px;
-        padding:20px;margin-bottom:16px;
-      ">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;letter-spacing:2px;color:var(--orange);margin-bottom:6px">
-          🚨 ALERTE PRÉ-ÉCHÉANCE — 20H
-        </div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);letter-spacing:1px;margin-bottom:14px">
-          Chaque jeudi à 20h · Rappel aux membres qui n'ont pas encore payé · Échéance à 23h59
-        </div>
-        <div id="alerte-status" style="
-          background:var(--s2);border:1px solid var(--b1);border-radius:10px;
-          padding:12px 14px;font-family:'JetBrains Mono',monospace;font-size:11px;
-          margin-bottom:14px;letter-spacing:.5px;
-        ">Chargement…</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="envoyerAlerte20h()" style="
-            flex:1;padding:14px;border:none;border-radius:12px;cursor:pointer;
-            background:linear-gradient(135deg,var(--orange),#EA580C);color:#fff;
-            font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px;
-            box-shadow:0 6px 20px rgba(249,115,22,.3);transition:all .2s;
-          " onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='none'">
-            📱 ENVOYER L'ALERTE WHATSAPP
-          </button>
-          <button onclick="activerAlerteAuto()" id="btn-alerte-auto" style="
-            flex:1;padding:14px;border:1px solid rgba(249,115,22,.4);border-radius:12px;cursor:pointer;
-            background:transparent;color:var(--orange);
-            font-family:'Space Grotesk',sans-serif;font-size:16px;letter-spacing:2px;transition:all .2s;
-          ">
-            ⏰ ACTIVER RAPPEL AUTO
-          </button>
-        </div>
-
-        <!-- Nouvelles automatisations -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-          <button class="btn btn-outline btn-sm" id="rappel-auto-btn" onclick="toggleRappelAuto()" style="font-size:11px">
-            ⏰ Rappel jeudi: OFF
-          </button>
-          <button class="btn btn-outline btn-sm" id="wa-confirm-auto-btn" onclick="toggleWAConfirmAuto()" style="font-size:11px">
-            📱 Confirmation WA: OFF
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="setupFCM()" style="font-size:11px;grid-column:span 2">
-            🔔 Activer notifications push
-          </button>
-        </div>
-
-        <!-- Config heure rappel -->
-        <div style="display:flex;align-items:center;gap:10px;margin-top:10px;flex-wrap:wrap">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">Heure du rappel jeudi :</div>
-          <input type="time" id="rappel-heure" value="08:00" class="db-search" style="width:110px" onchange="localStorage.setItem('jc2_rappel_config',JSON.stringify({heure:parseInt(this.value.split(':')[0]),minutes:parseInt(this.value.split(':')[1])}));if(localStorage.getItem('jc2_rappel_auto'))planifierRappelJeudiMatin()">
-        </div>
-      </div>
-
-        <!-- Actions Phase 3 -->
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px">
-          <button class="btn btn-outline btn-sm" onclick="envoyerRelancesIntelligentes()" style="font-size:11px">
-            🎯 Relances intelligentes
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="genererResumeHebdo()" style="font-size:11px">
-            📊 Résumé hebdomadaire
-          </button>
-          <button class="btn btn-outline btn-sm" onclick="exportCompletCSV()" style="font-size:11px;grid-column:span 2">
-            ⬇️ Export complet (4 feuilles CSV)
-          </button>
-        </div>
-      </div>
-
-      <!-- Liste non payés à 20h -->
-      <div class="trac-week-card">
-        <div class="trac-week-title" style="font-size:16px;margin-bottom:6px">💰 Membres non payés — Rappel urgent</div>
-        <div class="trac-week-sub" style="margin-bottom:14px">Ces membres recevront l'alerte de dernière chance</div>
-        <div id="alerte-unpaid-list">
-          <div id="alerte-empty-state"></div>
-        </div>
-      </div>
-
-      <!-- Historique alertes -->
-      <div class="trac-week-card">
-        <div class="trac-week-title" style="font-size:16px;margin-bottom:14px">📋 Historique des alertes envoyées</div>
-        <div id="alertes-hist"></div>
-      </div>
-
-      <!-- Audit Trail -->
-      <div class="trac-week-card">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-          <div class="trac-week-title" style="font-size:16px">🔍 Audit Trail — Historique des modifications</div>
-          <button class="btn btn-outline btn-sm" onclick="exportAuditCSV()">⬇️ CSV</button>
-        </div>
-        <div id="audit-trail-list">
-          <div id="audit-empty-state"></div>
-        </div>
-      </div>          <div class="empty-state"><div class="empty-icon">📋</div><p>Aucune alerte envoyée.</p></div>
-        </div>
-      </div>
-
+    <!-- Sous-onglets -->
+    <div style="display:flex;gap:4px;background:var(--dark4);border-radius:10px;padding:4px;margin-bottom:16px;overflow-x:auto">
+      <button class="tab active" id="trac-tab-semaine" onclick="switchTracTab('semaine',this)" style="flex:1;white-space:nowrap;font-size:12px">📋 Semaine</button>
+      <button class="tab" id="trac-tab-historique" onclick="switchTracTab('historique',this)" style="flex:1;white-space:nowrap;font-size:12px">📜 Historique</button>
+      <button class="tab" id="trac-tab-scores" onclick="switchTracTab('scores',this)" style="flex:1;white-space:nowrap;font-size:12px">🏆 Scores</button>
+      <button class="tab" id="trac-tab-retards" onclick="switchTracTab('retards',this)" style="flex:1;white-space:nowrap;font-size:12px">⚠️ Retards</button>
     </div>
 
     <!-- ── SEMAINE EN COURS ── -->
     <div id="trac-panel-semaine" style="display:none">
 
-      <!-- BÉNÉFICIAIRE EN VEDETTE -->
-      <div id="benef-suivi-card" style="
-        background:linear-gradient(135deg,#051A0A,#021008);
-        border:2px solid rgba(16,185,129,.35);border-radius:18px;
-        padding:20px;margin-bottom:16px;
-      ">
+      <!-- Bénéficiaire -->
+      <div id="benef-suivi-card" style="background:linear-gradient(135deg,#051A0A,#021008);border:2px solid rgba(16,185,129,.35);border-radius:18px;padding:20px;margin-bottom:16px;">
         <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:10px">🏆 Bénéficiaire de cette semaine</div>
         <div id="benef-suivi-content">
-          <div class="empty-state" style="padding:10px"><div class="empty-icon" style="font-size:24px">💸</div><p>Aucun bénéficiaire — lance le tirage d'abord</p></div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:22px;color:var(--green)" id="bsv-nom">—</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);margin-top:4px" id="bsv-info">—</div>
         </div>
       </div>
 
-      <!-- SUIVI COTISATIONS -->
+      <!-- Titre semaine -->
+      <div class="trac-week-card" style="margin-bottom:12px">
+        <div class="trac-week-title" id="tr-week-title">Semaine en cours</div>
+        <div class="trac-week-sub" id="tr-week-sub">—</div>
+        <div style="margin-top:12px">
+          <div style="display:flex;justify-content:space-between;margin-bottom:6px">
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)" id="tr-prog-paid">0 payé</span>
+            <span style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)" id="tr-prog-total">sur 0</span>
+          </div>
+          <div style="background:var(--s3);border-radius:99px;height:8px;overflow:hidden">
+            <div id="tr-prog" style="height:100%;border-radius:99px;background:linear-gradient(90deg,var(--green),#00E5AC);transition:width .5s ease;width:0%"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;margin-top:8px;flex-wrap:wrap;gap:8px">
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green)" id="tr-collected">0 $ reçu</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--red)" id="tr-remaining">0 $ manquant</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)" id="tr-pct">0%</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Boutons actions -->
+      <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
+        <button onclick="toutCocher()" style="flex:1;padding:10px;background:var(--gold);border:none;border-radius:10px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">✅ Tout cocher</button>
+        <button onclick="toutDecocher()" style="flex:1;padding:10px;background:var(--s2);border:1px solid var(--b1);border-radius:10px;color:var(--t1);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer">↩️ Décocher</button>
+      </div>
+
+      <!-- Liste cotisations -->
+      <div style="background:var(--s1);border:1px solid var(--b1);border-radius:14px;padding:12px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px">LISTE DES COTISATIONS</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px">
+            <span style="color:var(--green)" id="tr-total-coll">0 $</span>
+            <span style="color:var(--t3)"> · </span>
+            <span style="color:var(--red)" id="tr-total-rest">0 $ restant</span>
+            <span style="color:var(--t3)"> </span>
+            <span id="tr-total-pct" style="color:var(--t3)">0%</span>
+          </div>
+        </div>
+        <div id="cotis-grid" style="max-height:55vh;overflow-y:auto;scrollbar-width:thin"></div>
+      </div>
+
+      <!-- Badge mise à jour -->
+      <div id="msg-update-badge" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green);padding:6px 12px;background:var(--green-bg);border:1px solid rgba(0,200,150,.2);border-radius:8px;margin-bottom:8px;opacity:0;transition:opacity .3s;text-align:center"></div>
+
+      <!-- Message WhatsApp -->
+      <div style="background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(37,211,102,.03));border:1.5px solid rgba(37,211,102,.25);border-radius:16px;padding:18px">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px">📢 Message WhatsApp</div>
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 8px;background:var(--green-bg);border:1px solid rgba(0,200,150,.2);border-radius:99px;color:var(--green)">🔴 EN DIRECT</div>
+        </div>
+        <div id="wa-resume-msg" style="background:rgba(0,0,0,.3);border:1px solid var(--b1);border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;font-size:11px;line-height:1.8;color:var(--t1);white-space:pre-wrap;word-break:break-word;max-height:200px;overflow-y:auto;margin-bottom:12px">Chargement…</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="copyResumeMsg()" style="flex:1;padding:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t1);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer">📋 Copier</button>
+          <button onclick="sendResumeWA(event)" style="flex:2;padding:10px;background:#25D366;border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">📱 Envoyer</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── HISTORIQUE ── -->
+    <div id="trac-panel-historique" style="display:none">
       <div class="trac-week-card">
         <div class="trac-week-header">
-          <div>
-            <div class="trac-week-title" id="tr-week-title">Semaine en cours</div>
-            <div class="trac-week-sub" id="tr-week-sub">—</div>
-          </div>
-          <div style="display:flex;gap:8px;flex-wrap:wrap;">
-            <button class="btn btn-gold btn-sm" onclick="markAllPaid()">✅ Tout cocher</button>
-            <button class="btn btn-outline btn-sm" onclick="markAllUnpaid()">↩️ Décocher</button>
-          </div>
+          <div class="trac-week-title">✅ Confirmations de réception</div>
+          <button class="btn btn-outline btn-sm" onclick="exportHistCSV()">⬇️ CSV</button>
         </div>
-
-        <!-- Barre de progression -->
-        <div class="trac-prog-outer">
-          <div class="trac-prog-inner" id="tr-prog" style="width:0%"></div>
+        <div id="trac-hist-empty" class="empty-state" style="padding:16px">
+          <div class="empty-icon">📜</div><p>Aucune confirmation.</p>
         </div>
-        <div class="trac-prog-label">
-          <span id="tr-prog-paid">0 payés</span>
-          <span id="tr-prog-total">sur 0 membres</span>
-        </div>
-        <!-- Compte à rebours -->
-        <div id="tr-countdown" style="font-family:'JetBrains Mono',monospace;font-size:10px;text-align:center;margin-top:8px;padding:8px;background:var(--s3);border-radius:8px;letter-spacing:1px;"></div>
+        <div id="trac-hist"></div>
+      </div>
+    </div>
 
-        <!-- Liste membres dans une boîte scrollable fixe -->
-        <div style="
-          border:1px solid var(--b1);border-radius:12px;
-          overflow:hidden;margin-top:14px;
-        ">
-          <!-- Header de la boîte -->
-          <div style="
-            display:flex;align-items:center;justify-content:space-between;
-            padding:10px 14px;background:var(--s3);border-bottom:1px solid var(--b1);
-          ">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px">LISTE DES COTISATIONS</div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <span id="tr-collected" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--green)">0 $</span>
-              <span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">·</span>
-              <span id="tr-remaining" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--red)">0 $ restant</span>
-              <span id="tr-pct" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold);margin-left:4px">0%</span>
-            </div>
-          </div>
-          <!-- Zone scrollable -->
-          <!-- Badge mise à jour en temps réel -->
-          <div id="msg-update-badge" style="
-            font-family:'JetBrains Mono',monospace;font-size:10px;
-            color:var(--green);padding:6px 12px;
-            background:var(--green-bg);border:1px solid rgba(0,200,150,.2);
-            border-radius:8px;margin-bottom:8px;
-            opacity:0;transition:opacity .3s;text-align:center;
-          ">✅ Message mis à jour</div>
-
-          <div class="cotis-grid" id="cotis-grid" style="
-            max-height:55vh;overflow-y:auto;
-            padding:8px;
-            scrollbar-width:thin;scrollbar-color:var(--b2) transparent;
-          ">
-            <div class="empty-state" style="grid-column:1/-1">
-              <div class="empty-icon">⏳</div>
-              <p>Ajoutez des membres pour activer le suivi.</p>
-            </div>
-          </div>
+    <!-- ── SCORES ── -->
+    <div id="trac-panel-scores" style="display:none">
+      <div class="trac-week-card">
+        <div class="trac-week-title" style="margin-bottom:12px">🏆 Classement des membres</div>
+        <div id="scores-list">
+          <div class="empty-state"><div class="empty-icon">🏆</div><p>Aucun score disponible.</p></div>
         </div>
       </div>
-
-      <!-- RÉSUMÉ À ENVOYER DANS WHATSAPP -->
-      <div style="background:linear-gradient(135deg,rgba(37,211,102,.08),rgba(37,211,102,.03));border:1.5px solid rgba(37,211,102,.25);border-radius:16px;padding:18px;margin-top:8px">
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
-          <div>
-            <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px">📢 Message groupe WhatsApp</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);margin-top:2px">Se met à jour automatiquement à chaque coche</div>
-          </div>
-          <div id="msg-live-badge" style="font-family:'JetBrains Mono',monospace;font-size:9px;padding:3px 8px;background:var(--green-bg);border:1px solid rgba(0,200,150,.2);border-radius:99px;color:var(--green)">
-            🔴 EN DIRECT
-          </div>
-        </div>
-
-        <!-- Message résumé -->
-        <div id="wa-resume-msg" style="
-          background:rgba(0,0,0,.3);border:1px solid var(--b1);
-          border-radius:10px;padding:14px;font-family:'JetBrains Mono',monospace;
-          font-size:11px;line-height:1.8;color:var(--t1);
-          white-space:pre-wrap;word-break:break-word;
-          max-height:200px;overflow-y:auto;margin-bottom:12px;
-        ">Chargement des membres…</div>
-
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <button onclick="copyResumeMsg()" style="flex:1;padding:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t1);font-family:'Inter',sans-serif;font-weight:600;font-size:13px;cursor:pointer">
-            📋 Copier
-          </button>
-          <button onclick="sendResumeWA(event)" style="flex:2;padding:10px;background:#25D366;border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
-            📱 Envoyer dans WhatsApp
-          </button>
-        </div>
-        <div style="margin-top:8px">
-          <button onclick="exportCotisCSV()" style="width:100%;padding:8px;background:var(--s2);border:1px solid var(--b1);border-radius:8px;color:var(--t3);font-family:'JetBrains Mono',monospace;font-size:10px;cursor:pointer">
-            ⬇️ Exporter en CSV
-          </button>
-        </div>
-      </div>
-
     </div>
 
     <!-- ── RETARDS ── -->
     <div id="trac-panel-retards" style="display:none">
       <div class="trac-week-card">
-        <div class="trac-week-title" style="margin-bottom:6px">⚠️ Membres en retard de paiement</div>
-        <div class="trac-week-sub" style="margin-bottom:16px">Membres marqués "En retard" dans la base de données</div>
+        <div class="trac-week-title" style="margin-bottom:6px">⚠️ Non payés cette semaine</div>
         <div id="retards-list">
-          <div class="empty-state"><div class="empty-icon">✅</div><p>Aucun membre en retard !</p></div>
-        </div>
-        <div style="margin-top:18px">
-          <div class="trac-week-title" style="font-size:17px;margin-bottom:10px">⏳ Non payés cette semaine</div>
-          <div id="unpaid-this-week-list">
-            <div class="empty-state"><div class="empty-icon">✅</div><p>Tout le monde a payé cette semaine !</p></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ── HISTORIQUE PAIEMENTS ── -->
-    <div id="trac-panel-historique" style="display:none">
-
-      <!-- Sous-onglets -->
-      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px">
-        <button class="tab active" id="hist-tab-confirmations" onclick="switchHistTab('confirmations',this)" style="font-size:11px">✅ Confirmations</button>
-        <button class="tab" id="hist-tab-cotisations" onclick="switchHistTab('cotisations',this)" style="font-size:11px">💳 Cotisations / semaine</button>
-        <button class="tab" id="hist-tab-stats" onclick="switchHistTab('stats',this)" style="font-size:11px">📊 Stats par membre</button>
-        <button class="tab" id="hist-tab-saisie" onclick="switchHistTab('saisie',this)" style="font-size:11px">✏️ Saisie manuelle</button>
-      </div>
-
-      <!-- Confirmations -->
-      <div id="hist-panel-confirmations">
-        <div class="trac-week-card">
-          <div class="trac-week-header">
-            <div class="trac-week-title">✅ Historique des confirmations</div>
-            <button class="btn btn-outline btn-sm" onclick="exportHistCSV()">⬇️ CSV</button>
-          </div>
-          <div id="trac-hist-empty" class="empty-state" style="padding:16px">
-            <div class="empty-icon">📜</div><p>Aucune confirmation enregistrée.</p>
-          </div>
-          <div id="trac-hist"></div>
-        </div>
-      </div>
-
-      <!-- Cotisations par semaine -->
-      <div id="hist-panel-cotisations" style="display:none">
-        <div class="trac-week-card">
-          <div class="trac-week-header">
-            <div class="trac-week-title">💳 Historique des cotisations</div>
-            <button class="btn btn-outline btn-sm" onclick="exportCotisHistCSV()">⬇️ CSV</button>
-          </div>
-          <div style="margin-bottom:12px">
-            <select class="db-filter" id="hist-cotis-filter" onchange="renderCotisHist()" style="width:100%;font-size:14px">
-              <option value="">Toutes les semaines</option>
-            </select>
-          </div>
-          <div id="cotis-hist-content">
-            <div class="empty-state"><svg width="110" height="110" viewBox="0 0 120 120" fill="none"><rect x="20" y="55" width="16" height="40" rx="3" fill="rgba(240,180,41,.15)" stroke="rgba(240,180,41,.3)" stroke-width="1.5"/><rect x="44" y="40" width="16" height="55" rx="3" fill="rgba(240,180,41,.25)" stroke="rgba(240,180,41,.4)" stroke-width="1.5"/><rect x="68" y="28" width="16" height="67" rx="3" fill="rgba(240,180,41,.35)" stroke="rgba(240,180,41,.5)" stroke-width="1.5"/></svg><div class="empty-state-title">Aucun historique</div><div class="empty-state-sub">Coche les paiements chaque jeudi<br>pour alimenter l'historique.</div></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Stats par membre -->
-      <div id="hist-panel-stats" style="display:none">
-        <div class="trac-week-card">
-          <div class="trac-week-header">
-            <div class="trac-week-title">📊 Statistiques par membre</div>
-            <button class="btn btn-outline btn-sm" onclick="exportStatsCSV()">⬇️ CSV</button>
-          </div>
-          <div style="display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap">
-            <select class="db-filter" id="stats-filter-groupe" onchange="renderStatsMembre()" style="flex:1;font-size:14px">
-              <option value="">Tous les groupes</option>
-              <option value="anc">⭐ Anciens</option>
-              <option value="nouv">🆕 Nouveaux</option>
-            </select>
-            <select class="db-filter" id="stats-filter-sort" onchange="renderStatsMembre()" style="flex:1;font-size:14px">
-              <option value="total">Tri : Total payé</option>
-              <option value="pct">Tri : % ponctualité</option>
-              <option value="nom">Tri : Nom A→Z</option>
-            </select>
-          </div>
-          <div id="stats-membre-content">
-            <div id="stats-empty-state"></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Saisie manuelle des semaines passées -->
-      <div id="hist-panel-saisie" style="display:none">
-        <div class="trac-week-card">
-          <div class="trac-week-header">
-            <div class="trac-week-title">✏️ Saisie manuelle — Semaines passées</div>
-          </div>
-          <div style="background:rgba(240,180,41,.06);border:1px solid rgba(240,180,41,.2);border-radius:10px;padding:12px;margin-bottom:14px">
-            <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--gold);margin-bottom:6px">💡 Comment ça marche</div>
-            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);line-height:1.8">
-              Sélectionne une semaine passée → coche qui a payé → Enregistrer<br>
-              Ceci remplira l'historique pour calculer les scores correctement
-            </div>
-          </div>
-          <div style="margin-bottom:12px">
-            <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:6px">CHOISIR LA SEMAINE</label>
-            <select class="db-filter" id="saisie-semaine" onchange="loadSaisieManuelle()" style="width:100%;font-size:14px">
-              <option value="">— Choisir une semaine passée —</option>
-            </select>
-          </div>
-          <div id="saisie-manuelle-content"></div>
-        </div>
-      </div>
-
-    </div>
-
-    <!-- ── BÉNÉFICIAIRE ── -->
-    <div id="trac-panel-benef" style="display:none">
-      <div class="beneficiaire-card" id="benef-card">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px;color:var(--green);margin-bottom:14px;">💰 Confirmation de réception — Bénéficiaire du jour</div>
-        <div id="benef-empty" class="empty-state" style="padding:20px">
-          <div class="empty-icon">💸</div>
-          <p>Aucun bénéficiaire cette semaine.</p>
-        </div>
-        <div id="benef-content" style="display:none">
-          <div class="benef-header">
-            <div class="benef-avatar" id="benef-avatar">?</div>
-            <div>
-              <div class="benef-name" id="benef-name">—</div>
-              <div class="benef-sub" id="benef-sub">—</div>
-            </div>
-            <div style="margin-left:auto;text-align:right">
-              <div class="benef-amount-big" id="benef-amount">—</div>
-              <div class="benef-amount-lbl">Montant dû</div>
-            </div>
-          </div>
-          <div class="confirm-box" id="benef-form">
-            <div class="confirm-box-title">📋 Confirmer la réception</div>
-            <div class="confirm-row">
-              <span class="confirm-label">💵 Montant reçu</span>
-              <input type="number" class="confirm-input" id="benef-montant-recu" placeholder="Ex: 6800" min="0">
-              <span style="font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--muted)" id="benef-devise-lbl">$ CAD</span>
-            </div>
-            <div style="margin-bottom:12px">
-              <div class="confirm-label" style="margin-bottom:8px">💬 Commentaire (optionnel)</div>
-              <textarea class="confirm-textarea" id="benef-commentaire" placeholder="Ex: Remis en main propre lors de la réunion du jeudi…"></textarea>
-            </div>
-            <button class="btn btn-sm" style="background:var(--green);color:var(--dark);width:100%;font-size:16px" onclick="confirmerReception()">
-              ✅ CONFIRMER LA RÉCEPTION
-            </button>
-          </div>
-          <div id="benef-confirmed" style="display:none">
-            <div class="confirmed-stamp">
-              <span style="font-size:28px">✅</span>
-              <div>
-                <div class="confirmed-stamp-text">RÉCEPTION CONFIRMÉE</div>
-                <div class="confirmed-stamp-detail" id="benef-confirmed-detail">—</div>
-              </div>
-            </div>
-            <div id="benef-confirmed-comment" style="display:none" class="hist-comment"></div>
-            <!-- Boutons après confirmation -->
-            <div class="btn-row" style="margin-top:14px">
-              <button class="btn btn-gold btn-sm" onclick="genererRecuBenef()" style="flex:1">
-                📄 Générer le reçu PDF
-              </button>
-              <button class="btn btn-outline btn-sm" onclick="envoyerConfirmationWA()" style="flex:1">
-                📱 Envoyer WA
-              </button>
-            </div>
-            <button class="btn btn-red btn-sm" style="margin-top:10px;width:100%" onclick="annulerConfirmation()">↩️ Annuler la confirmation</button>
-          </div>
+          <div class="empty-state"><div class="empty-icon">✅</div><p>Tout le monde a payé !</p></div>
         </div>
       </div>
     </div>
@@ -8613,61 +8282,28 @@ function renderAlertesHist() {
 }
 
 function renderRetards() {
-  // Membres en retard dans la base de données
-  const retards     = memberDB.filter(m => m.paiement === 'late');
   const retardsList = document.getElementById('retards-list');
-  if (retardsList) {
-    if (!retards.length) {
-      retardsList.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>Aucun membre en retard !</p></div>`;
-    } else {
-      retardsList.innerHTML = retards.map(m => {
-        const initials  = m.nom.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
-        const avatarCls = m.groupe === 'anc' ? 'av-anc' : 'av-nouv';
-        const tel       = m.tel || '';
-        const msgRetard = encodeURIComponent(`Bonjour ${m.nom.split(' ')[0]},\n\n⚠️ Votre cotisation *Jeudi Cash* est en attente de règlement.\n💳 Montant : *${COTISATION} ${DEVISE}*\n\nMerci de régulariser dans les meilleurs délais.\n\n_Jeudi Cash — Tontine officielle_ 🏦`);
-        const waBtn = tel
-          ? `<button class="notif-btn-wa" onclick="(function(t,m){window.location.href='https://wa.me/'+t.replace(/[^\d+]/g,'')+' ?text='+m;})(tel,msgRetard)">📱 WA</button>`
-          : `<span style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--muted)">Pas de tél.</span>`;
-        return `
-          <div class="member-notif-row" style="border-color:rgba(255,68,68,.3);margin-bottom:8px">
-            <div class="mn-avatar ${avatarCls}">${initials}</div>
-            <div class="mn-info">
-              <div class="mn-name">${esc(m.nom)}</div>
-              <div class="mn-detail">${m.numero||'—'} · ${tel||'Pas de tél.'}</div>
-            </div>
-            <button class="btn btn-gold btn-sm" onclick="updatePaiement(${m.id},'ok')">✅ À jour</button>
-            ${waBtn}
-          </div>`;
-      }).join('');
-    }
-  }
+  if (!retardsList) return;
 
   // Non payés cette semaine
-  const unpaid     = cotisWeek ? cotisWeek.membersState.filter(m => !m.paid) : [];
-  const unpaidList = document.getElementById('unpaid-this-week-list');
-  if (unpaidList) {
-    if (!unpaid.length) {
-      unpaidList.innerHTML = `<div class="empty-state"><div class="empty-icon">✅</div><p>Tout le monde a payé cette semaine !</p></div>`;
-    } else {
-      unpaidList.innerHTML = unpaid.map(m => {
-        const initials  = m.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
-        const avatarCls = m.groupe === 'anc' ? 'av-anc' : 'av-nouv';
-        const dbM       = memberDB.find(x => x.nom === m.name);
-        const tel       = dbM?.tel || '';
-        return `
-          <div class="member-notif-row unpaid" style="margin-bottom:8px">
-            <div class="mn-avatar ${avatarCls}">${initials}</div>
-            <div class="mn-info">
-              <div class="mn-name">${esc(m.name)}</div>
-              <div class="mn-detail">${COTISATION} ${DEVISE} · ${tel||'Pas de tél.'}</div>
-            </div>
-            <button class="btn btn-gold btn-sm" onclick="toggleCotis(${m.idx},'${m.groupe}');renderRetards()">✅ Marquer payé</button>
-          </div>`;
-      }).join('');
-    }
-  }
-}
+  const unpaid = cotisWeek ? cotisWeek.membersState.filter(m => !m.paid) : [];
 
+  if (!unpaid.length) {
+    retardsList.innerHTML = '<div class="empty-state"><div class="empty-icon">✅</div><p>Tout le monde a payé cette semaine !</p></div>';
+    return;
+  }
+
+  retardsList.innerHTML = unpaid.map(m => {
+    const dbM = memberDB.find(x => x.nom === m.name || x.nom?.trim() === m.name.trim());
+    const tel = dbM?.tel || '';
+    const waMsg = encodeURIComponent('Bonjour ' + m.name.split(' ')[0] + ',\n\n💳 Ta cotisation Jeudi Cash de ' + COTISATION + ' ' + DEVISE + ' est attendue.\n\n_Jeudi Cash_ 🏦');
+    return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b0)">' +
+      '<span style="font-size:20px">❌</span>' +
+      '<span style="font-weight:600;flex:1">' + esc(m.name) + '</span>' +
+      (tel ? '<a href="https://wa.me/' + tel.replace(/[^\d+]/g,'') + '?text=' + waMsg + '" style="padding:5px 10px;background:rgba(37,211,102,.1);border:1px solid rgba(37,211,102,.2);border-radius:8px;color:#25D366;font-size:12px;text-decoration:none">📱 Rappel</a>' : '') +
+      '</div>';
+  }).join('');
+}
 function updatePaiement(id, statut) {
   const m = memberDB.find(x => x.id === id);
   if (!m) return;
@@ -10108,63 +9744,17 @@ _Jeudi Cash — Tontine officielle_ 🏦`;
 // ── Bénéficiaire en vedette dans Suivi ──
 function renderBenefSuivi() {
   const benef = getCurrentWeekBenef();
-  const box   = document.getElementById('benef-suivi-content');
-  if (!box) return;
-
-  if (!benef) {
-    box.innerHTML = `<div class="empty-state" style="padding:10px"><div class="empty-icon" style="font-size:24px">💸</div><p>Aucun bénéficiaire — lance le tirage d'abord</p></div>`;
-    return;
+  const nomEl = document.getElementById('bsv-nom');
+  const infEl = document.getElementById('bsv-info');
+  if (!nomEl) return;
+  if (benef) {
+    nomEl.textContent = benef.name;
+    infEl.textContent = 'Sem. #' + String(benef.week).padStart(3,'0') + ' · ' + (benef.date||'—') + ' · ' + (potDuBenef(benef.name)||0).toLocaleString('fr-CA') + ' $ ' + DEVISE;
+  } else {
+    nomEl.textContent = 'Aucun bénéficiaire cette semaine';
+    infEl.textContent = 'Lance le tirage d\'abord';
   }
-
-  const dbM      = memberDB.find(x => x.nom === benef.name);
-  const tel      = dbM?.tel || '';
-  const potStr   = potDuBenefStr(benef?.name);
-  const initials = benef.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
-  const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent);
-  const smsSep   = isIOS ? '&' : '?';
-  const msgB     = `🎉 Félicitations ${benef.name.split(' ')[0]} ! Tu es le bénéficiaire Jeudi Cash de cette semaine ! 🏆
-
-💰 Montant à recevoir : *${potStr}*
-📅 ${benef.date}
-
-💳 *Assure-toi que ton numéro Interac est à jour dans l'application !*
-Les membres vont te faire leurs virements directement.
-
-📲 *IMPORTANT — Pour chaque virement reçu :*
-✅ Confirme immédiatement à l'administrateur du groupe WhatsApp que tu as bien reçu le paiement
-✅ Mentionne le nom du membre qui t'a payé
-✅ Ceci permet à l'administrateur de cocher et valider les cotisations
-
-⚠️ Sans ta confirmation, l'administrateur ne peut pas valider les paiements !
-
-_Jeudi Cash — Tontine officielle_ 🏦`;
-
-  box.innerHTML = `
-    <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap">
-      <div style="width:52px;height:52px;border-radius:50%;background:rgba(16,185,129,.15);border:2px solid rgba(16,185,129,.4);display:flex;align-items:center;justify-content:center;font-family:'Space Grotesk',sans-serif;font-size:22px;color:var(--green);flex-shrink:0">${initials}</div>
-      <div style="flex:1">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:22px;color:var(--green);letter-spacing:1px">🏆 ${esc(benef.name)}</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);margin-top:3px">Sem. #${String(benef.week).padStart(3,'0')} · ${benef.date}</div>
-      </div>
-      <div style="text-align:right">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:28px;color:var(--green)">${potStr}</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px">MONTANT À RECEVOIR</div>
-      </div>
-    </div>
-    ${tel ? `
-    <div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap">
-      <a href="https://wa.me/${tel.replace(/[^\d+]/g,'')}?text=${encodeURIComponent(msgB)}"
-         style="flex:1;text-align:center;text-decoration:none;display:block;padding:11px;border-radius:10px;background:#25D366;color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700">
-        📱 Notifier par WhatsApp
-      </a>
-      <a href="sms:${tel.replace(/[^\d+]/g,'')}${smsSep}body=${encodeURIComponent(msgB)}"
-         style="flex:1;text-align:center;text-decoration:none;display:block;padding:11px;border-radius:10px;background:var(--blue);color:#fff;font-family:'Inter',sans-serif;font-size:13px;font-weight:700">
-        💬 Notifier par SMS
-      </a>
-    </div>` : `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);margin-top:10px">⚠️ Numéro non enregistré — ajoute-le dans 👥 Membres</div>`}`;
 }
-
-// ── Générer le message résumé WhatsApp ──
 function generateResumeMsg() {
   const box = document.getElementById('wa-resume-msg');
   if (!box) return;
