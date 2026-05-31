@@ -2095,7 +2095,78 @@ select{
       </div>
     </div>
 
-    <!-- Alerte non payés (jeudi seulement) -->
+    <!-- ══ RÉCAPITULATIF FIN DE SEMAINE ══ -->
+    <div id="home-recap-section" style="display:none;margin-bottom:12px">
+      <div style="background:linear-gradient(135deg,rgba(0,200,150,.12),rgba(0,200,150,.04));border:2px solid rgba(0,200,150,.3);border-radius:18px;padding:18px;">
+        
+        <!-- Titre -->
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:14px">
+          <span style="font-size:24px">🎉</span>
+          <div>
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:16px;color:var(--green)">COLLECTE TERMINÉE !</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px" id="recap-semaine-lbl">SEM. #004</div>
+          </div>
+          <div style="margin-left:auto;text-align:right">
+            <div style="font-family:'Space Grotesk',sans-serif;font-weight:800;font-size:22px;color:var(--green)" id="recap-montant-recu">0 $</div>
+            <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">REÇU</div>
+          </div>
+        </div>
+
+        <!-- Bénéficiaire -->
+        <div style="background:rgba(0,0,0,.2);border-radius:12px;padding:12px;margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--green);letter-spacing:1px;margin-bottom:6px">🏆 BÉNÉFICIAIRE</div>
+          <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:18px" id="recap-benef-nom">—</div>
+          <div style="display:flex;gap:16px;margin-top:8px;flex-wrap:wrap">
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">COTISANTS</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px" id="recap-nb-cotis">0/0</div>
+            </div>
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">MONTANT DÛ</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:15px;color:var(--gold)" id="recap-montant-du">0 $</div>
+            </div>
+            <div>
+              <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3)">STATUT</div>
+              <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px" id="recap-statut">—</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Liste payés -->
+        <div style="background:rgba(0,0,0,.15);border-radius:10px;padding:10px;margin-bottom:12px;max-height:120px;overflow-y:auto">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;margin-bottom:6px">✅ ONT COTISÉ</div>
+          <div id="recap-payes-list" style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t1);line-height:1.8">—</div>
+        </div>
+
+        <!-- Message WhatsApp -->
+        <div style="margin-bottom:12px">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;margin-bottom:6px">📢 MESSAGE DE REMERCIEMENT</div>
+          <div id="recap-msg" style="background:rgba(0,0,0,.3);border:1px solid var(--b1);border-radius:10px;padding:12px;font-family:'JetBrains Mono',monospace;font-size:10px;line-height:1.8;color:var(--t1);white-space:pre-wrap;max-height:150px;overflow-y:auto">Génération du message...</div>
+        </div>
+
+        <!-- Boutons -->
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button onclick="copierRecapMsg()" style="flex:1;padding:10px;background:var(--s2);border:1px solid var(--b2);border-radius:10px;color:var(--t1);font-family:'Space Grotesk',sans-serif;font-weight:600;font-size:13px;cursor:pointer">
+            📋 Copier
+          </button>
+          <button onclick="envoyerRecapWA()" style="flex:2;padding:10px;background:#25D366;border:none;border-radius:10px;color:#fff;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
+            📱 Envoyer dans WhatsApp
+          </button>
+        </div>
+
+        <!-- Confirmer réception -->
+        <div style="margin-top:10px;padding-top:10px;border-top:1px solid rgba(255,255,255,.08)">
+          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;margin-bottom:6px">CONFIRMER LA RÉCEPTION</div>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+            <input type="number" id="recap-montant-input" placeholder="Montant reçu ($)" style="flex:1;padding:8px;border-radius:8px;border:1px solid var(--b1);background:var(--s1);color:var(--t1);font-family:'JetBrains Mono',monospace;font-size:12px;min-width:120px">
+            <button onclick="confirmerReceptionRecap()" style="padding:9px 16px;background:var(--gold);border:none;border-radius:8px;color:#000;font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:13px;cursor:pointer">
+              ✅ CONFIRMER
+            </button>
+          </div>
+        </div>
+
+      </div>
+    </div>
     <div id="home-alert-section" style="display:none;background:rgba(255,77,77,.06);border:1px solid rgba(255,77,77,.2);border-radius:12px;padding:12px;margin-bottom:10px">
       <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--red);letter-spacing:1px;margin-bottom:8px">🚨 NON PAYÉS AUJOURD'HUI</div>
       <div id="home-unpaid-list"></div>
@@ -7140,6 +7211,133 @@ function renderBenefNotif() {
   if (interacEl) interacEl.textContent = interac || 'Non enregistré';
 }
 
+// ═══════════════════════════════════════
+//  RÉCAPITULATIF FIN DE SEMAINE
+// ═══════════════════════════════════════
+
+
+
+// ═══════════════════════════════════════
+//  RÉCAPITULATIF FIN DE SEMAINE
+// ═══════════════════════════════════════
+
+function renderRecapFinSemaine() {
+  const recap = document.getElementById('home-recap-section');
+  if (!recap) return;
+
+  const today = new Date();
+  const day = today.getDay();
+  const isFinSemaine = (day === 5 || day === 6 || day === 0);
+
+  if (!isFinSemaine) { recap.style.display = 'none'; return; }
+
+  const benef = getCurrentWeekBenef();
+  if (!benef) { recap.style.display = 'none'; return; }
+
+  const allM  = cotisWeek ? cotisWeek.membersState : [];
+  const paid  = allM.filter(function(m) { return m.paid; });
+  const total = allM.length;
+  const montantRecu = paid.length * COTISATION;
+  const montantDu   = potDuBenef(benef.name) || (total * COTISATION);
+  const pct   = total > 0 ? Math.round((paid.length / total) * 100) : 0;
+  const statut = paid.length === total ? '✅ Complet' : ('⏳ ' + paid.length + '/' + total);
+
+  function upd(id, val) { var el = document.getElementById(id); if (el) el.textContent = val; }
+
+  upd('recap-semaine-lbl',  'SEM. #' + String(benef.week).padStart(3,'0') + ' · ' + benef.date);
+  upd('recap-benef-nom',    benef.name);
+  upd('recap-nb-cotis',     paid.length + '/' + total + ' membres');
+  upd('recap-montant-du',   montantDu.toLocaleString('fr-CA') + ' $ ' + DEVISE);
+  upd('recap-montant-recu', montantRecu.toLocaleString('fr-CA') + ' $ ' + DEVISE);
+  upd('recap-statut',       statut);
+
+  var inp = document.getElementById('recap-montant-input');
+  if (inp && !inp.value) inp.value = montantRecu;
+
+  var payesList = document.getElementById('recap-payes-list');
+  if (payesList) {
+    payesList.textContent = paid.length
+      ? paid.map(function(m) { return '✅ ' + m.name; }).join('\n')
+      : 'Aucun paiement enregistré';
+  }
+
+  var msgEl = document.getElementById('recap-msg');
+  if (msgEl) {
+    var dateStr = today.toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
+    var nonPayes = allM.filter(function(m) { return !m.paid; });
+    var paidLines = paid.map(function(m) { return '   ✅ ' + m.name; }).join('\n');
+    var nonPayesSection = nonPayes.length > 0
+      ? '\n❌ *N\'ont pas cotisé (' + nonPayes.length + ') :*\n' + nonPayes.map(function(m) { return '   ❌ ' + m.name; }).join('\n')
+      : '\n🎊 *Participation à 100% ! Merci à tous !*';
+
+    msgEl.textContent =
+      '🏦 *JEUDI CASH — Récapitulatif Semaine #' + String(benef.week).padStart(3,'0') + '*\n' +
+      '📅 ' + dateStr + '\n\n' +
+      '🎉 *Félicitations à ' + benef.name + ' !*\n\n' +
+      '✅ *La bénéficiaire a reçu son pot de ' + montantRecu.toLocaleString('fr-CA') + ' $ ' + DEVISE + '*\n\n' +
+      '📊 *Participation : ' + paid.length + '/' + total + ' membres (' + pct + '%)*\n\n' +
+      '✅ *Ont cotisé (' + paid.length + ') :*\n' +
+      paidLines +
+      nonPayesSection + '\n\n' +
+      'Merci à tous pour votre ponctualité et votre confiance. 🙏\n\n' +
+      '_Jeudi Cash — Tontine Officielle_ 🏦';
+  }
+
+  recap.style.display = 'block';
+}
+
+function copierRecapMsg() {
+  var msg = document.getElementById('recap-msg') ? document.getElementById('recap-msg').textContent : '';
+  if (!msg) { toast('⚠️ Aucun message à copier', true); return; }
+  copyText(msg);
+  toast('📋 Message copié !');
+}
+
+function envoyerRecapWA() {
+  var msg = document.getElementById('recap-msg') ? document.getElementById('recap-msg').textContent : '';
+  if (!msg) { toast('⚠️ Aucun message à envoyer', true); return; }
+  window.location.href = 'https://wa.me/?text=' + encodeURIComponent(msg);
+}
+
+function confirmerReceptionRecap() {
+  var benef = getCurrentWeekBenef();
+  if (!benef) { toast('⚠️ Aucun bénéficiaire trouvé', true); return; }
+  var inp = document.getElementById('recap-montant-input');
+  var montant = parseFloat(inp ? inp.value : 0);
+  if (!montant) { toast('⚠️ Entre le montant reçu', true); return; }
+
+  var conf = {
+    weekNum:    benef.week,
+    weekDate:   benef.date,
+    benefName:  benef.name,
+    benefGroupe:benef.groupe || 'anc',
+    montantDu:  potDuBenef(benef.name),
+    montantRecu:montant,
+    confirmedBy:currentRole || 'owner',
+    confirmedAt:new Date().toLocaleString('fr-CA'),
+    commentaire:'Confirmé via récapitulatif fin de semaine'
+  };
+
+  currentConfirm = conf;
+  localStorage.setItem('jc2_cur_confirm', JSON.stringify(conf));
+
+  var hist = receptionsHist.slice();
+  if (!hist.find(function(r) { return r.weekNum === conf.weekNum; })) {
+    hist.unshift(conf);
+    receptionsHist = hist;
+    localStorage.setItem('jc2_recep_hist', JSON.stringify(hist));
+  }
+
+  if (db) {
+    db.ref('jeudi_cash/jc2_cur_confirm').set(conf);
+    db.ref('jeudi_cash/jc2_recep_hist').set(hist);
+  }
+
+  toast('✅ ' + montant.toLocaleString('fr-CA') + ' $ confirmés pour ' + benef.name + ' !');
+  renderHome();
+  renderCalendar();
+}
+
 function updateDiagStatus() {
   const el = document.getElementById('diag-status');
   if (!el) return;
@@ -7993,6 +8191,9 @@ function renderHome() {
       </div>`).join('') +
       (unpaid.length>5?`<div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);padding-top:6px">+${unpaid.length-5} autres…</div>`:'');
   }
+
+  // Récapitulatif fin de semaine (vendredi, samedi, dimanche)
+  renderRecapFinSemaine();
 }
 
 // Rafraîchir le Home toutes les minutes si actif
