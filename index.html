@@ -2232,49 +2232,47 @@ select{
       <div class="locked-icon">🔒</div>
       <div class="locked-text">Lancement du tirage réservé aux administrateurs et au propriétaire.</div>
     </div>
-    <div id="mb-panel-tirage" style="display:none">
-      <div class="tirage-grid">
-        <div class="tirage-card ancien-card">
-          <div class="tirage-label">⭐ Tirage — Anciens</div>
-          <div class="drum ancien-border" id="drum-anc" onclick="startTirage('anc')">
-            <div class="drum-name" id="disp-anc">CLIQUER</div>
-            <div class="drum-label">pour tirer</div>
-          </div>
-          <div class="tirage-result" id="res-anc">
-            <div class="winner-box" id="win-anc">—</div>
-            <div class="winner-sub" id="winsub-anc"></div>
-          </div>
-          <div class="prog-wrap"><div class="prog-bar" id="prog-anc" style="width:0%"></div></div>
-          <div class="prog-label" id="plbl-anc">0 / 0</div>
-          <div class="btn-row" style="justify-content:center;margin-top:14px">
-            <button class="btn btn-gold btn-sm" onclick="startTirage('anc')" id="btn-anc">🎲 Lancer</button>
-            <button class="btn btn-outline btn-sm" onclick="resetTirage('anc')">↩️ Reset</button>
-          </div>
-          <div class="chips-title" id="ctitle-anc"></div>
-          <div class="chips" id="chips-anc"></div>
+    <div class="tirage-grid">
+      <div class="tirage-card ancien-card">
+        <div class="tirage-label">⭐ Tirage — Anciens</div>
+        <div class="drum ancien-border" id="drum-anc" onclick="startTirage('anc')">
+          <div class="drum-name" id="disp-anc">CLIQUER</div>
+          <div class="drum-label">pour tirer</div>
         </div>
-        <div class="tirage-card nouveau-card">
-          <div class="tirage-label">🆕 Tirage — Nouveaux</div>
-          <div class="drum nouveau-border drum-nouveau" id="drum-nouv" onclick="startTirage('nouv')">
-            <div class="drum-name" id="disp-nouv">CLIQUER</div>
-            <div class="drum-label">pour tirer</div>
-          </div>
-          <div class="tirage-result" id="res-nouv">
-            <div class="winner-box" id="win-nouv">—</div>
-            <div class="winner-sub" id="winsub-nouv"></div>
-          </div>
-          <div class="prog-wrap"><div class="prog-bar" id="prog-nouv" style="width:0%"></div></div>
-          <div class="prog-label" id="plbl-nouv">0 / 0</div>
-          <div class="btn-row" style="justify-content:center;margin-top:14px">
-            <button class="btn btn-blue btn-sm" onclick="startTirage('nouv')" id="btn-nouv">🎲 Lancer</button>
-            <button class="btn btn-outline-blue btn-sm" onclick="resetTirage('nouv')">↩️ Reset</button>
-          </div>
-          <div class="chips-title" id="ctitle-nouv"></div>
-          <div class="chips" id="chips-nouv"></div>
+        <div class="tirage-result" id="res-anc">
+          <div class="winner-box" id="win-anc">—</div>
+          <div class="winner-sub" id="winsub-anc"></div>
         </div>
+        <div class="prog-wrap"><div class="prog-bar" id="prog-anc" style="width:0%"></div></div>
+        <div class="prog-label" id="plbl-anc">0 / 0</div>
+        <div class="btn-row" style="justify-content:center;margin-top:14px">
+          <button class="btn btn-gold btn-sm" onclick="startTirage('anc')" id="btn-anc">🎲 Lancer</button>
+          <button class="btn btn-outline btn-sm" onclick="resetTirage('anc')">↩️ Reset</button>
+        </div>
+        <div class="chips-title" id="ctitle-anc"></div>
+        <div class="chips" id="chips-anc"></div>
       </div>
-      <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:16px;letter-spacing:1px;">⭐ Anciens tirés en PREMIER · 🆕 Nouveaux bougent la tontine en DERNIER</p>
+      <div class="tirage-card nouveau-card">
+        <div class="tirage-label">🆕 Tirage — Nouveaux</div>
+        <div class="drum nouveau-border drum-nouveau" id="drum-nouv" onclick="startTirage('nouv')">
+          <div class="drum-name" id="disp-nouv">CLIQUER</div>
+          <div class="drum-label">pour tirer</div>
+        </div>
+        <div class="tirage-result" id="res-nouv">
+          <div class="winner-box" id="win-nouv">—</div>
+          <div class="winner-sub" id="winsub-nouv"></div>
+        </div>
+        <div class="prog-wrap"><div class="prog-bar" id="prog-nouv" style="width:0%"></div></div>
+        <div class="prog-label" id="plbl-nouv">0 / 0</div>
+        <div class="btn-row" style="justify-content:center;margin-top:14px">
+          <button class="btn btn-blue btn-sm" onclick="startTirage('nouv')" id="btn-nouv">🎲 Lancer</button>
+          <button class="btn btn-outline-blue btn-sm" onclick="resetTirage('nouv')">↩️ Reset</button>
+        </div>
+        <div class="chips-title" id="ctitle-nouv"></div>
+        <div class="chips" id="chips-nouv"></div>
+      </div>
     </div>
+    <p style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:16px;letter-spacing:1px;">⭐ Anciens tirés en PREMIER · 🆕 Nouveaux bougent la tontine en DERNIER</p>
   </div>
 
   <!-- ══ CALENDRIER ══ (visible à tous) -->
@@ -2296,43 +2294,41 @@ select{
       <div class="locked-icon">🔒</div>
       <div class="locked-text">Gestion des échanges réservée aux administrateurs et au propriétaire.</div>
     </div>
-    <div id="mb-panel-import" style="display:none">
-      <div class="swap-section">
-        <div class="swap-title">🔄 Échange de position entre deux membres</div>
-        <div class="swap-desc">Sélectionne deux membres qui veulent échanger leur semaine de tirage.<br>✅ = membre déjà tiré · Les échanges sont possibles pour tous les membres.</div>
-        <div class="swap-grid">
-          <div class="swap-slot" id="slot-a">
-            <div class="swap-slot-label">👤 Membre A</div>
-            <div class="swap-selects">
-              <select class="swap-select" id="sel-a-groupe" onchange="onSwapGroupChange('a')"><option value="">— Groupe —</option><option value="anc">⭐ Anciens</option><option value="nouv">🆕 Nouveaux</option></select>
-              <select class="swap-select" id="sel-a-membre" onchange="onSwapMemberChange('a')" disabled><option value="">— Membre —</option></select>
-            </div>
-            <div class="swap-preview" id="preview-a"><div class="swap-preview-name" id="prev-name-a"></div><div class="swap-preview-info" id="prev-info-a"></div></div>
+    <div class="swap-section">
+      <div class="swap-title">🔄 Échange de position entre deux membres</div>
+      <div class="swap-desc">Sélectionne deux membres qui veulent échanger leur semaine de tirage.<br>✅ = membre déjà tiré · Les échanges sont possibles pour tous les membres.</div>
+      <div class="swap-grid">
+        <div class="swap-slot" id="slot-a">
+          <div class="swap-slot-label">👤 Membre A</div>
+          <div class="swap-selects">
+            <select class="swap-select" id="sel-a-groupe" onchange="onSwapGroupChange('a')"><option value="">— Groupe —</option><option value="anc">⭐ Anciens</option><option value="nouv">🆕 Nouveaux</option></select>
+            <select class="swap-select" id="sel-a-membre" onchange="onSwapMemberChange('a')" disabled><option value="">— Membre —</option></select>
           </div>
-          <div class="swap-arrow">⇄</div>
-          <div class="swap-slot" id="slot-b">
-            <div class="swap-slot-label">👤 Membre B</div>
-            <div class="swap-selects">
-              <select class="swap-select" id="sel-b-groupe" onchange="onSwapGroupChange('b')"><option value="">— Groupe —</option><option value="anc">⭐ Anciens</option><option value="nouv">🆕 Nouveaux</option></select>
-              <select class="swap-select" id="sel-b-membre" onchange="onSwapMemberChange('b')" disabled><option value="">— Membre —</option></select>
-            </div>
-            <div class="swap-preview" id="preview-b"><div class="swap-preview-name" id="prev-name-b"></div><div class="swap-preview-info" id="prev-info-b"></div></div>
+          <div class="swap-preview" id="preview-a"><div class="swap-preview-name" id="prev-name-a"></div><div class="swap-preview-info" id="prev-info-a"></div></div>
+        </div>
+        <div class="swap-arrow">⇄</div>
+        <div class="swap-slot" id="slot-b">
+          <div class="swap-slot-label">👤 Membre B</div>
+          <div class="swap-selects">
+            <select class="swap-select" id="sel-b-groupe" onchange="onSwapGroupChange('b')"><option value="">— Groupe —</option><option value="anc">⭐ Anciens</option><option value="nouv">🆕 Nouveaux</option></select>
+            <select class="swap-select" id="sel-b-membre" onchange="onSwapMemberChange('b')" disabled><option value="">— Membre —</option></select>
           </div>
-        </div>
-        <div style="text-align:center;margin-top:22px">
-          <button class="btn btn-purple btn-sm" id="btn-swap" onclick="doSwap()" disabled style="font-size:15px;padding:12px 32px">🔄 Confirmer l'échange</button>
-        </div>
-        <div class="swap-result" id="swap-result">
-          <div class="swap-result-title">✅ ÉCHANGE CONFIRMÉ !</div>
-          <div class="swap-result-row" id="swap-result-row"></div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px" id="swap-result-desc"></div>
+          <div class="swap-preview" id="preview-b"><div class="swap-preview-name" id="prev-name-b"></div><div class="swap-preview-info" id="prev-info-b"></div></div>
         </div>
       </div>
-      <div class="swap-section">
-        <div class="swap-title" style="font-size:17px">📋 Historique des échanges</div>
-        <div class="swap-log-title" id="swap-log-count">Aucun échange enregistré</div>
-        <div class="swap-log" id="swap-log"></div>
+      <div style="text-align:center;margin-top:22px">
+        <button class="btn btn-purple btn-sm" id="btn-swap" onclick="doSwap()" disabled style="font-size:15px;padding:12px 32px">🔄 Confirmer l'échange</button>
       </div>
+      <div class="swap-result" id="swap-result">
+        <div class="swap-result-title">✅ ÉCHANGE CONFIRMÉ !</div>
+        <div class="swap-result-row" id="swap-result-row"></div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px" id="swap-result-desc"></div>
+      </div>
+    </div>
+    <div class="swap-section">
+      <div class="swap-title" style="font-size:17px">📋 Historique des échanges</div>
+      <div class="swap-log-title" id="swap-log-count">Aucun échange enregistré</div>
+      <div class="swap-log" id="swap-log"></div>
     </div>
   </div>
 
@@ -9284,7 +9280,7 @@ function switchTab(name) {
     if (name === 'notifications') { renderNotifications(); setTimeout(generateResumeMsg, 200); }
     if (name === 'calendrier')    renderCalendar();
     if (name === 'dashboard')     { try { renderDashboard(); } catch(e) { console.warn('dashboard err:', e); } }
-    if (name === 'echange')       { renderSwapLog(); }
+    if (name === 'echange')       { try { renderSwapLog(); } catch(e) {} }
     if (name === 'sanctions')     renderSanctions();
     if (name === 'saison2')       renderCycles();
     if (name === 'profil')        initProfilSelect();
