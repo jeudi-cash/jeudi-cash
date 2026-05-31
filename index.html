@@ -431,11 +431,7 @@ h1{
 .tab-panel.active { display: block !important; overflow:visible !important; height:auto !important; }
 
 /* Sous-panels Suivi — cachés par défaut */
-#trac-panel-semaine, #trac-panel-scores, #trac-panel-alertes,
-#trac-panel-retards, #trac-panel-historique, #trac-panel-benef {
-  display: none !important;
-}
-.trac-panel-visible { display: block !important; }
+/* Sous-panels Suivi — cachés par défaut via JS au démarrage */
 .trac-panel-visible { display: block !important; }
 
 /* Sous-panels Membres — tirage et import cachés par défaut, fiches visible */
@@ -8145,20 +8141,19 @@ function startCountdown() {
 }
 
 function switchTracTab(name, btn) {
-  ['semaine','scores','alertes','retards','historique','benef'].forEach(t => {
+  const panels = ['semaine','scores','retards','historique'];
+  panels.forEach(t => {
     const panel = document.getElementById('trac-panel-' + t);
     if (panel) {
-      panel.classList.toggle('trac-panel-visible', t === name);
       panel.style.display = t === name ? 'block' : 'none';
+      panel.classList.toggle('trac-panel-visible', t === name);
     }
     const tb = document.getElementById('trac-tab-' + t);
     if (tb) tb.classList.toggle('active', t === name);
   });
   if (name === 'scores')     renderScores();
-  if (name === 'alertes')    { renderAlertPanel(); renderAuditTrail(); updateNotifSettings(); }
   if (name === 'retards')    renderRetards();
   if (name === 'historique') renderTracHist();
-  if (name === 'semaine')    renderTracabilite();
 }
 
 // ═══════════════════════════════════════
@@ -8601,11 +8596,14 @@ function annulerConfirmation() {
 }
 
 function renderTracabilite() {
-  // S'assurer que le sous-panel semaine est visible dans l'onglet suivi
+  // Toujours afficher le bon sous-panel
   if (_currentTab === 'tracabilite') {
-    const activePanel = ['semaine','scores','alertes','retards','historique','benef']
-      .find(t => document.getElementById('trac-panel-' + t)?.style.display === 'block');
-    if (!activePanel) switchTracTab('semaine');
+    const panels = ['semaine','scores','retards','historique'];
+    const active = panels.find(t => {
+      const el = document.getElementById('trac-panel-' + t);
+      return el && el.style.display === 'block';
+    });
+    if (!active) switchTracTab('semaine');
   }
 
   buildCotisWeek();
@@ -8887,7 +8885,14 @@ function switchTab(name) {
   // Render contenu selon l'onglet
   try {
     if (name === 'home')          renderHome();
-    if (name === 'tracabilite')   { switchTracTab('semaine'); renderTracabilite(); }
+    if (name === 'tracabilite') {
+      // Forcer l'affichage du sous-panel semaine
+      ['semaine','scores','retards','historique'].forEach(function(t) {
+        var p = document.getElementById('trac-panel-' + t);
+        if (p) p.style.display = t === 'semaine' ? 'block' : 'none';
+      });
+      renderTracabilite();
+    }
     if (name === 'membres') {
       ['tirage','fiches','import'].forEach(function(t) {
         var p = document.getElementById('mb-panel-' + t);
