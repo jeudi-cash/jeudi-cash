@@ -4923,8 +4923,8 @@ function resetAll() {
   ['anc','nouv'].forEach(g=>{
     G[g]={members:[],drawn:[],schedule:[]};
     ls(`jc2_${g}_members`,[]); ls(`jc2_${g}_drawn`,[]); ls(`jc2_${g}_schedule`,[]);
-    document.getElementById(`disp-${g}`).textContent='CLIQUER';
-    document.getElementById(`res-${g}`).classList.remove('visible');
+    const dispEl = document.getElementById(`disp-${g}`); if(dispEl) dispEl.textContent='CLIQUER';
+    const resEl = document.getElementById(`res-${g}`); if(resEl) resEl.classList.remove('visible');
   });
   swapLog=[]; ls('jc2_swaplog',swapLog);
   memberDB=[]; ls('jc2_memberdb',memberDB);
@@ -4941,17 +4941,21 @@ function resetAll() {
 //  MEMBERS
 // ═══════════════════════════════════════
 function renderGrid(g) {
-  const grid=document.getElementById(`grid-${g}`), list=G[g].members;
-  grid.innerHTML=''; const pad=String(list.length).length;
-  list.forEach((name,i)=>{
-    const row=document.createElement('div'); row.className='member-row';
-    const isDrawn=G[g].drawn.includes(i);
+  const grid = document.getElementById(`grid-${g}`);
+  if (!grid) return; // Panel tirage peut être supprimé
+  const list = G[g].members;
+  grid.innerHTML = '';
+  const pad = String(list.length).length;
+  list.forEach((name,i) => {
+    const row = document.createElement('div'); row.className='member-row';
+    const isDrawn = G[g].drawn.includes(i);
     row.innerHTML=`<span class="m-num">#${String(i+1).padStart(pad,'0')}</span>
       <input type="text" id="${g}_m_${i}" placeholder="Membre ${i+1}" value="${esc(name)}" maxlength="60" class="${isDrawn?'drawn-name':''}">
       <button class="btn-rm" onclick="removeMember('${g}',${i})">✕</button>`;
     grid.appendChild(row);
   });
-  document.getElementById(`${g}-count`).textContent=list.length;
+  const countEl = document.getElementById(`${g}-count`);
+  if (countEl) countEl.textContent = list.length;
 }
 
 function addMember(g){
@@ -5058,7 +5062,10 @@ function remaining(g){return G[g].members.map((_,i)=>i).filter(i=>!G[g].drawn.in
 function startTirage(g){
   const rem=remaining(g);
   if(!rem.length){toast('🎉 Tous les tirages de ce groupe sont faits !');return;}
-  const drum=document.getElementById(`drum-${g}`),disp=document.getElementById(`disp-${g}`),btn=document.getElementById(`btn-${g}`);
+  const drum=document.getElementById(`drum-${g}`);
+  const disp=document.getElementById(`disp-${g}`);
+  const btn=document.getElementById(`btn-${g}`);
+  if(!drum||!disp||!btn){toast('⚠️ Panel tirage non disponible');return;}
   drum.classList.add('spinning'); btn.disabled=true;
   let cnt=0,max=30+Math.floor(Math.random()*20);
   const iv=setInterval(()=>{
@@ -5074,9 +5081,9 @@ function startTirage(g){
       const wk=G[g].drawn.length;
       if(G[g].schedule[wk-1]){G[g].schedule[wk-1].name=G[g].members[wi];G[g].schedule[wk-1].idx=wi;ls(`jc2_${g}_schedule`,G[g].schedule);}
       const gw=G[g].schedule[wk-1]?.week||wk;
-      document.getElementById(`win-${g}`).textContent='🏆 '+(G[g].members[wi]||`Membre ${wi+1}`);
-      document.getElementById(`winsub-${g}`).textContent=`Reçoit ${totalPot()} ${DEVISE} · Semaine ${gw}`;
-      document.getElementById(`res-${g}`).classList.add('visible');
+      const winEl=document.getElementById(`win-${g}`); if(winEl) winEl.textContent='🏆 '+(G[g].members[wi]||`Membre ${wi+1}`);
+      const subEl=document.getElementById(`winsub-${g}`); if(subEl) subEl.textContent=`Reçoit ${totalPot()} ${DEVISE} · Semaine ${gw}`;
+      const resEl=document.getElementById(`res-${g}`); if(resEl) resEl.classList.add('visible');
       updateStats();updateTirageUI(g);renderCalendar();renderChips(g);
       cotisWeek=null; ls('jc2_cotis_week',null); renderTracabilite(); renderNotifications(); renderDashboard();
       launchConfetti(g);
@@ -5086,22 +5093,22 @@ function startTirage(g){
 function resetTirage(g){
   if(!confirm(`Réinitialiser les tirages des ${g==='anc'?'anciens':'nouveaux'} ?`))return;
   G[g].drawn=[];G[g].schedule=[];ls(`jc2_${g}_drawn`,G[g].drawn);ls(`jc2_${g}_schedule`,G[g].schedule);
-  document.getElementById(`res-${g}`).classList.remove('visible');
-  document.getElementById(`disp-${g}`).textContent='CLIQUER';
+  const resEl=document.getElementById(`res-${g}`); if(resEl) resEl.classList.remove('visible');
+  const dispEl=document.getElementById(`disp-${g}`); if(dispEl) dispEl.textContent='CLIQUER';
   rebuildSchedule(g);updateStats();updateTirageUI(g);renderCalendar();renderChips(g);
 }
 function updateTirageUI(g){
   const total=G[g].members.length,done=G[g].drawn.length,pct=total>0?(done/total)*100:0;
-  document.getElementById(`prog-${g}`).style.width=pct+'%';
-  document.getElementById(`plbl-${g}`).textContent=`${done} / ${total} tirages effectués`;
+  const progEl=document.getElementById(`prog-${g}`); if(progEl) progEl.style.width=pct+'%';
+  const plblEl=document.getElementById(`plbl-${g}`); if(plblEl) plblEl.textContent=`${done} / ${total} tirages effectués`;
   const btn=document.getElementById(`btn-${g}`);
-  btn.textContent=done>=total&&total>0?'✅ Tous tirés !':'🎲 Lancer';
-  btn.disabled=done>=total&&total>0;
+  if(btn){ btn.textContent=done>=total&&total>0?'✅ Tous tirés !':'🎲 Lancer'; btn.disabled=done>=total&&total>0; }
 }
 function renderChips(g){
   const rem=remaining(g),total=G[g].members.length;
-  document.getElementById(`ctitle-${g}`).textContent=`Restants : ${rem.length} / ${total}`;
-  const c=document.getElementById(`chips-${g}`);c.innerHTML='';
+  const ctitle=document.getElementById(`ctitle-${g}`); if(ctitle) ctitle.textContent=`Restants : ${rem.length} / ${total}`;
+  const c=document.getElementById(`chips-${g}`); if(!c) return;
+  c.innerHTML='';
   G[g].members.forEach((name,i)=>{const el=document.createElement('span');el.className='chip'+(G[g].drawn.includes(i)?' done':'');el.textContent=name||`Membre ${i+1}`;c.appendChild(el);});
 }
 
