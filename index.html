@@ -1807,12 +1807,8 @@ select{
       <button class="more-btn-sm" onclick="switchTabFromMore('dashboard')">
         <span>📊</span><span>Stats</span>
       </button>
-      <button class="more-btn-sm" onclick="switchTabFromMore('sanctions')">
-        <span>⚖️</span><span>Amendes</span>
-      </button>
-      <button class="more-btn-sm" onclick="switchTabFromMore('saison2')">
-        <span>📁</span><span>Cycles</span>
-      </button>
+      
+      
     </div>
   </div>
 
@@ -1820,12 +1816,8 @@ select{
   <div style="padding:0 14px;margin-bottom:14px;margin-top:12px">
     <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:2px;text-transform:uppercase;margin-bottom:8px">Administration</div>
     <div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px">
-      <button class="more-btn-sm" id="bn-gestion" onclick="switchTabFromMore('admin-panel')">
-        <span>👑</span><span>Gestion</span>
-      </button>
-      <button class="more-btn-sm" onclick="switchTabFromMore('profil')">
-        <span>👤</span><span>Profil</span>
-      </button>
+      
+      
     </div>
   </div>
 
@@ -2008,9 +2000,9 @@ select{
     <button class="tab" id="tab-trac-btn" onclick="switchTab('tracabilite',this)">✅ Suivi</button>
     <button class="tab" id="tab-notif-btn" onclick="switchTab('notifications',this)">🔔 Notifs</button>
     <button class="tab" id="tab-dash-btn" onclick="switchTab('dashboard',this)">📊 Stats</button>
-    <button class="tab" id="tab-sanc-btn" onclick="switchTab('sanctions',this)">⚖️ Sanctions</button>
-    <button class="tab" id="tab-saison-btn" onclick="switchTab('saison2',this)">📁 Cycles</button>
-    <button class="tab owner-only" id="tab-owner-btn" onclick="switchTab('admin-panel',this)" style="color:var(--purple)">👑 Gestion</button>
+    
+    
+    
   </div>
 
   <!-- Dropdown nav (tablette/petit écran) -->
@@ -2097,7 +2089,7 @@ select{
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
         <button class="home-action-btn" onclick="switchTab('tracabilite')"><span style="font-size:18px">✅</span><span>Suivi</span></button>
         <button class="home-action-btn" onclick="switchTab('calendrier')"><span style="font-size:18px">📅</span><span>Calendrier</span></button>
-        <button class="home-action-btn" onclick="switchTab('sanctions')"><span style="font-size:18px">⚖️</span><span>Amendes</span></button>
+        
         <button class="home-action-btn" onclick="switchTab('dashboard')"><span style="font-size:18px">📊</span><span>Stats</span></button>
       </div>
     </div>
@@ -2273,219 +2265,6 @@ select{
   </div>
 
   <!-- ══ SANCTIONS & AMENDES ══ -->
-  <div class="tab-panel" id="tab-sanctions" style="display:none">
-
-    <!-- Amendes automatiques calculées -->
-    <div style="background:var(--s1);border:1px solid var(--b1);border-radius:20px;padding:18px;margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px">
-        <div style="font-family:'Space Grotesk',sans-serif;font-weight:700;font-size:16px">⚡ Amendes calculées automatiquement</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="renderAmendesToutes()">🔄 Recalculer</button>
-          <button class="btn btn-gold btn-sm" onclick="exportStatsCSV()">⬇️ CSV</button>
-        </div>
-      </div>
-      <div id="amendes-auto-list">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)">Cliquez Recalculer pour voir les amendes…</div>
-      </div>
-    </div>
-    <div class="sanc-card">
-      <div class="sanc-header">
-        <div class="sanc-title">⚙️ Configuration des amendes</div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px">
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;display:block;margin-bottom:6px">MONTANT RETARD (après 23h59)</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="number" id="sanc-montant-retard" value="10" min="0" class="db-search" style="width:80px;text-align:center">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3)" id="sanc-devise-lbl">$ CAD</span>
-          </div>
-        </div>
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;display:block;margin-bottom:6px">MONTANT NON-PAIEMENT</label>
-          <div style="display:flex;align-items:center;gap:8px">
-            <input type="number" id="sanc-montant-nonpay" value="25" min="0" class="db-search" style="width:80px;text-align:center">
-            <span style="font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--t3)">$ CAD</span>
-          </div>
-        </div>
-      </div>
-      <button class="btn btn-gold btn-sm" onclick="sauvegarderConfigSanctions()">💾 Sauvegarder la configuration</button>
-    </div>
-
-    <!-- Résumé amendes -->
-    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:14px">
-      <div class="kpi-card kpi-red" style="border-top:3px solid var(--red)">
-        <div class="kpi-val" id="sanc-total-amendes" style="color:var(--red);font-size:22px">0</div>
-        <div class="kpi-lbl">Total amendes dues</div>
-      </div>
-      <div class="kpi-card kpi-green" style="border-top:3px solid var(--green)">
-        <div class="kpi-val" id="sanc-total-payees" style="color:var(--green);font-size:22px">0</div>
-        <div class="kpi-lbl">Amendes payées</div>
-      </div>
-      <div class="kpi-card kpi-gold" style="border-top:3px solid var(--gold)">
-        <div class="kpi-val" id="sanc-total-restant" style="color:var(--gold);font-size:22px">0</div>
-        <div class="kpi-lbl">Reste à recouvrer</div>
-      </div>
-    </div>
-
-    <!-- Ajouter une amende -->
-    <div class="sanc-card">
-      <div class="sanc-title" style="margin-bottom:14px">➕ Ajouter une amende</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px">
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">MEMBRE</label>
-          <select class="db-filter" id="sanc-membre" style="width:100%;font-size:14px">
-            <option value="">— Choisir un membre —</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">TYPE</label>
-          <select class="db-filter" id="sanc-type" style="width:100%;font-size:14px">
-            <option value="retard">⏰ Retard de paiement</option>
-            <option value="nonpay">❌ Non-paiement</option>
-            <option value="autre">📝 Autre</option>
-          </select>
-        </div>
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">MONTANT</label>
-          <input type="number" id="sanc-montant-custom" class="db-search" placeholder="Montant $" min="0" style="width:100%">
-        </div>
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">SEMAINE</label>
-          <input type="text" id="sanc-semaine" class="db-search" placeholder="Ex: Sem. #002" style="width:100%">
-        </div>
-      </div>
-      <div style="margin-bottom:12px">
-        <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">RAISON</label>
-        <input type="text" id="sanc-raison" class="db-search" placeholder="Ex: Paiement reçu le vendredi à 01h30…" style="width:100%">
-      </div>
-      <button class="btn btn-red btn-sm" onclick="ajouterAmende()">⚖️ Ajouter l'amende</button>
-    </div>
-
-    <!-- Liste des amendes -->
-    <div class="sanc-card">
-      <div class="sanc-header">
-        <div class="sanc-title">📋 Registre des amendes</div>
-        <div style="display:flex;gap:8px">
-          <select class="db-filter" id="sanc-filter" onchange="renderSanctions()">
-            <option value="">Toutes</option>
-            <option value="pending">Non payées</option>
-            <option value="paid">Payées</option>
-          </select>
-          <button class="btn btn-outline btn-sm" onclick="exportSanctionsCSV()">⬇️ CSV</button>
-        </div>
-      </div>
-      <div id="sanctions-list">
-        <div id="sanctions-empty-state"></div>
-      </div>
-    </div>
-
-  </div><!-- /tab-sanctions -->
-
-  <!-- ══ CYCLES / SAISONS ══ -->
-  <div class="tab-panel" id="tab-saison2" style="display:none">
-
-    <!-- SAUVEGARDE AUTOMATIQUE -->
-    <div class="cycle-card active-cycle" style="border-color:rgba(59,130,246,.3);">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;letter-spacing:2px;color:var(--blue);margin-bottom:14px">🔒 SAUVEGARDE AUTOMATIQUE</div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <div style="background:var(--s3);border-radius:10px;padding:12px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;margin-bottom:6px">DERNIÈRE SAUVEGARDE</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;color:var(--blue)" id="backup-last-time">—</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);margin-top:3px" id="backup-last-size">—</div>
-        </div>
-        <div style="background:var(--s3);border-radius:10px;padding:12px">
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;margin-bottom:6px">PROCHAINE SAUVEGARDE</div>
-          <div style="font-family:'Space Grotesk',sans-serif;font-size:16px;color:var(--green)" id="backup-next-time">—</div>
-          <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);margin-top:3px" id="backup-status-lbl">Auto quotidienne</div>
-        </div>
-      </div>
-      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
-        <div style="flex:1;min-width:140px">
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">HEURE AUTO</label>
-          <input type="time" id="backup-time" value="23:00" class="db-search" style="width:100%">
-        </div>
-        <div style="flex:1;min-width:140px">
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">MAX JOURS CONSERVÉS</label>
-          <select class="db-filter" id="backup-max" style="width:100%">
-            <option value="7">7 jours</option>
-            <option value="14" selected>14 jours</option>
-            <option value="30">30 jours</option>
-          </select>
-        </div>
-      </div>
-      <div class="btn-row">
-        <button class="btn btn-blue" onclick="creerBackupMaintenant()" style="flex:1">💾 Sauvegarder maintenant</button>
-        <button class="btn btn-outline btn-sm" onclick="toggleBackupAuto()" id="btn-backup-auto">⏰ Auto: ON</button>
-      </div>
-    </div>
-
-    <!-- Liste backups -->
-    <div class="sanc-card" style="margin-bottom:14px">
-      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;margin-bottom:14px">
-        <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px;color:var(--blue)">📋 HISTORIQUE DES SAUVEGARDES</div>
-        <div style="display:flex;gap:8px">
-          <button class="btn btn-outline btn-sm" onclick="purgerVieuxBackups()">🗑️ Purger</button>
-          <label class="btn btn-outline btn-sm" style="cursor:pointer">
-            📂 Importer JSON
-            <input type="file" accept=".json" onchange="importerBackup(event)" style="display:none">
-          </label>
-        </div>
-      </div>
-      <div id="backup-list">
-        <div id="backup-empty-state"></div>
-      </div>
-    </div>
-
-    <!-- Cycle actif -->
-    <div class="cycle-card active-cycle">
-      <div class="cycle-badge active">🟢 Cycle actif</div>
-      <div class="cycle-name" id="cycle-nom-actif">JEUDI CASH — SAISON 1</div>
-      <div class="cycle-meta" id="cycle-meta-actif">Chargement…</div>
-      <div class="cycle-stats">
-        <div class="cycle-stat"><div class="cycle-stat-val" id="cs-membres">0</div><div class="cycle-stat-lbl">Membres</div></div>
-        <div class="cycle-stat"><div class="cycle-stat-val" id="cs-tirages">0/0</div><div class="cycle-stat-lbl">Tirages</div></div>
-        <div class="cycle-stat"><div class="cycle-stat-val" id="cs-pot">0</div><div class="cycle-stat-lbl">Pot/Sem</div></div>
-      </div>
-    </div>
-
-    <!-- Actions cycle -->
-    <div class="sanc-card" style="border-color:rgba(239,68,68,.2)">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px;color:var(--red);margin-bottom:14px">📁 ARCHIVER ET DÉMARRER UN NOUVEAU CYCLE</div>
-      <div style="background:rgba(239,68,68,.06);border:1px solid rgba(239,68,68,.2);border-radius:10px;padding:14px;margin-bottom:16px">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);line-height:2">
-          ✅ Backup automatique créé avant archivage<br>
-          ✅ Archive complète du cycle sauvegardée<br>
-          🔄 Tirages remis à zéro · 🔄 Calendrier réinitialisé<br>
-          ⚠️ Les membres restent (modifiables avant)
-        </div>
-      </div>
-      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px">
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">NOM DU NOUVEAU CYCLE</label>
-          <input type="text" id="nouveau-cycle-nom" class="db-search" placeholder="Ex: JEUDI CASH — SAISON 2" style="width:100%">
-        </div>
-        <div>
-          <label style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);display:block;margin-bottom:5px">DATE PREMIER JEUDI</label>
-          <input type="date" id="nouveau-cycle-date" class="db-search" style="width:100%">
-        </div>
-      </div>
-      <button class="btn btn-red" onclick="archiverEtDemarrerNouveauCycle()" style="width:100%">
-        📁 ARCHIVER ET DÉMARRER UN NOUVEAU CYCLE
-      </button>
-    </div>
-
-    <!-- Cycles archivés -->
-    <div class="sanc-card">
-      <div style="font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px;color:var(--t2);margin-bottom:14px">🗂️ CYCLES ARCHIVÉS</div>
-      <div id="cycles-archives-list">
-        <div id="cycles-empty-state"></div>
-      </div>
-    </div>
-
-  </div><!-- /tab-saison2 -->
-
-  <!-- ══ GESTION (owner only) ══ -->
-  <!-- ══ PROFIL MEMBRE ══ -->
   <div class="tab-panel" id="tab-profil" style="display:none">
     <div style="max-width:480px;margin:0 auto">
 
@@ -2513,122 +2292,6 @@ select{
     </div>
   </div>
 
-  <div class="tab-panel" id="tab-admin-panel" style="display:none">
-    <div class="owner-section">
-      <div class="owner-title">👑 Gestion des accès — Propriétaire</div>
-
-      <!-- Multi-admin panel -->
-      <div style="background:var(--s2);border:1px solid var(--b1);border-radius:16px;padding:16px;margin-bottom:14px" id="multi-admin-panel">
-        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3)">Chargement…</div>
-      </div>
-      <div class="pw-card">
-        <div class="pw-card-title owner-color">👑 Mot de passe Propriétaire</div>
-        <div class="pw-field">
-          <label>Nouveau mot de passe</label>
-          <div class="pw-field-row">
-            <input type="password" class="pw-input" id="pw-owner" placeholder="Nouveau mot de passe…" oninput="checkStrength('pw-owner','str-owner')">
-            <button class="pw-eye" onclick="toggleEye('pw-owner',this)">👁️</button>
-          </div>
-          <div class="pw-strength" id="str-owner"></div>
-        </div>
-        <button class="btn btn-purple btn-sm" onclick="savePw('owner')">💾 Changer mon mot de passe</button>
-      </div>
-
-      <!-- Admin passwords -->
-      <div class="admin-grid">
-        <div class="pw-card">
-          <div class="pw-card-title admin1-color">🔧 Administrateur 1</div>
-          <div class="pw-field">
-            <label>Nom affiché</label>
-            <input type="text" class="pw-input" id="name-admin1" placeholder="Ex: Jean-Marc" maxlength="30">
-          </div>
-          <div class="pw-field">
-            <label>Mot de passe</label>
-            <div class="pw-field-row">
-              <input type="password" class="pw-input" id="pw-admin1" placeholder="Mot de passe…" oninput="checkStrength('pw-admin1','str-admin1')">
-              <button class="pw-eye" onclick="toggleEye('pw-admin1',this)">👁️</button>
-            </div>
-            <div class="pw-strength" id="str-admin1"></div>
-          </div>
-          <button class="btn btn-gold btn-sm" onclick="savePw('admin1')">💾 Enregistrer Admin 1</button>
-        </div>
-        <div class="pw-card">
-          <div class="pw-card-title admin2-color">🔧 Administrateur 2</div>
-          <div class="pw-field">
-            <label>Nom affiché</label>
-            <input type="text" class="pw-input" id="name-admin2" placeholder="Ex: Marie" maxlength="30">
-          </div>
-          <div class="pw-field">
-            <label>Mot de passe</label>
-            <div class="pw-field-row">
-              <input type="password" class="pw-input" id="pw-admin2" placeholder="Mot de passe…" oninput="checkStrength('pw-admin2','str-admin2')">
-              <button class="pw-eye" onclick="toggleEye('pw-admin2',this)">👁️</button>
-            </div>
-            <div class="pw-strength" id="str-admin2"></div>
-          </div>
-          <button class="btn btn-blue btn-sm" onclick="savePw('admin2')">💾 Enregistrer Admin 2</button>
-        </div>
-      </div>
-
-      <!-- Visitor password -->
-      <div class="pw-card" style="margin-top:14px">
-        <div class="pw-card-title visitor-color">👁️ Mot de passe Visiteur (calendrier uniquement)</div>
-        <div class="pw-field">
-          <label>Mot de passe</label>
-          <div class="pw-field-row">
-            <input type="password" class="pw-input" id="pw-visitor" placeholder="Mot de passe visiteur…" oninput="checkStrength('pw-visitor','str-visitor')" style="max-width:300px">
-            <button class="pw-eye" onclick="toggleEye('pw-visitor',this)">👁️</button>
-          </div>
-          <div class="pw-strength" id="str-visitor"></div>
-        </div>
-        <button class="btn btn-sm" style="background:var(--green);color:var(--dark)" onclick="savePw('visitor')">💾 Changer mot de passe Visiteur</button>
-      </div>
-
-      <!-- Trésorier -->
-      <div class="pw-card" style="border-color:rgba(240,180,41,.2)">
-        <div class="pw-card-title" style="color:var(--gold);font-size:14px;margin-bottom:12px">💰 Trésorier</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:10px">Cotisations + Sanctions uniquement · Pas de tirage ni d'échange</div>
-        <div class="pw-account">
-          <div>
-            <label>Nom</label>
-            <input type="text" class="pw-input" id="name-tresorier" placeholder="Nom du trésorier">
-          </div>
-          <div>
-            <label>Mot de passe</label>
-            <div class="pw-field-row">
-              <input type="password" class="pw-input" id="pw-tresorier" placeholder="Mot de passe…" oninput="checkStrength('pw-tresorier','str-tresorier')">
-              <button class="pw-eye" onclick="toggleEye('pw-tresorier',this)">👁️</button>
-            </div>
-            <div class="pw-strength" id="str-tresorier"></div>
-          </div>
-        </div>
-        <button class="btn btn-sm" style="background:var(--gold);color:var(--dark)" onclick="savePw('tresorier')">💾 Changer Trésorier</button>
-      </div>
-
-      <!-- Membres -->
-      <div class="pw-card" style="border-color:rgba(249,115,22,.2)">
-        <div class="pw-card-title" style="color:var(--orange);font-size:14px;margin-bottom:12px">👤 Membres</div>
-        <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);margin-bottom:10px">Mot de passe partagé pour tous les membres · Chaque membre voit seulement son statut</div>
-        <div>
-          <label>Mot de passe membre (partagé)</label>
-          <div class="pw-field-row">
-            <input type="password" class="pw-input" id="pw-membre" placeholder="Mot de passe membres…" oninput="checkStrength('pw-membre','str-membre')" style="max-width:300px">
-            <button class="pw-eye" onclick="toggleEye('pw-membre',this)">👁️</button>
-          </div>
-          <div class="pw-strength" id="str-membre"></div>
-        </div>
-        <button class="btn btn-sm" style="background:var(--orange);color:var(--dark)" onclick="savePw('membre')">💾 Changer mot de passe Membres</button>
-      </div>
-
-      <!-- Current credentials display -->
-      <div class="pw-card" style="margin-top:14px;border-color:rgba(167,139,250,.2)">
-        <div class="pw-card-title owner-color" style="font-size:14px;margin-bottom:12px">📋 Comptes actifs</div>
-        <div id="accounts-summary" style="font-family:'JetBrains Mono',monospace;font-size:11px;line-height:2;color:var(--muted)"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- ══ TRAÇABILITÉ ══ -->
   <div class="tab-panel" id="tab-tracabilite" style="display:none">
 
     <!-- TABS INTERNES -->
@@ -9345,8 +9008,7 @@ function closeMoreMenu() {
 //  NAVIGATION — VERSION SIMPLE ET ROBUSTE
 // ═══════════════════════════════════════
 
-var ALL_TABS = ['home','membres','tirage','calendrier','echange','sanctions',
-                'saison2','profil','admin-panel','tracabilite','dashboard','notifications'];
+var ALL_TABS = ['home','membres','tirage','calendrier','echange','tracabilite','dashboard','notifications','profil'];
 let _currentTab = 'home';
 
 function switchTab(name) {
