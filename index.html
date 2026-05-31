@@ -8721,28 +8721,14 @@ function renderTracabilite() {
     ${!filterM(unpaidM).length && !filterM(paidM).length ? emptyState('recherche','Aucun résultat','Essayez un autre nom') : ''}
   `;
 
-  // ── Bénéficiaire ──
-  if (!benef) {
-    document.getElementById('benef-empty').style.display   = 'block';
-    document.getElementById('benef-form').style.display    = 'none';
-    document.getElementById('benef-confirmed').style.display = 'none';
-    return;
-  }
-  document.getElementById('benef-empty').style.display = 'none';
-  const alreadyConfirmed = receptionsHist.some(r =>
-    r.weekNum === benef.week &&
-    (r.benefName === benef.name || r.benefName?.trim() === benef.name?.trim())
-  );
-  document.getElementById('benef-form').style.display      = (!alreadyConfirmed && canEdit) ? 'block' : 'none';
-  document.getElementById('benef-confirmed').style.display = alreadyConfirmed ? 'block' : 'none';
-  if (alreadyConfirmed) {
-    const conf = receptionsHist.find(r=>r.weekNum===benef.week&&(r.benefName===benef.name||r.benefName?.trim()===benef.name?.trim()));
-    const detEl = document.getElementById('benef-confirmed-detail');
-    if (detEl && conf) detEl.textContent = `${conf.montantRecu?.toLocaleString('fr-CA')||'—'} ${DEVISE} · ${conf.confirmedAt||'—'}`;
-    const cmEl = document.getElementById('benef-confirmed-comment');
-    if (cmEl && conf?.commentaire) { cmEl.style.display='block'; cmEl.textContent=`"${conf.commentaire}"`; }
-  }
-  if (benef) renderBenefNotif();
+  // Mettre à jour totaux
+  const totColl = document.getElementById('tr-total-coll');
+  if (totColl) totColl.textContent = collected.toLocaleString('fr-CA') + ' $';
+  const totRest = document.getElementById('tr-total-rest');
+  if (totRest) totRest.textContent = missing.toLocaleString('fr-CA') + ' $ restant';
+  const totPct = document.getElementById('tr-total-pct');
+  if (totPct) totPct.textContent = pct + '%';
+
   generateResumeMsg();
 }
 
