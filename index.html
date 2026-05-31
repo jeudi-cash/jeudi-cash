@@ -436,6 +436,7 @@ h1{
   display: none !important;
 }
 .trac-panel-visible { display: block !important; }
+.trac-panel-visible { display: block !important; }
 
 /* Sous-panels Membres — tirage et import cachés par défaut, fiches visible */
 #mb-panel-tirage, #mb-panel-import {
@@ -1730,22 +1731,22 @@ select{
 
 <!-- ══ BOTTOM NAV (mobile) ══ -->
 <nav class="bottom-nav" id="bottom-nav">
-  <button class="bn-item active" id="bn-home" onclick="switchTabMobile('home',this)">
-    <span class="bn-icon">🏠</span><span class="bn-label">Accueil</span>
-  </button>
-  <button class="bn-item" id="bn-suivi" onclick="switchTabMobile('tracabilite',this)">
-    <span class="bn-icon">✅</span><span class="bn-label">Suivi</span>
-  </button>
-  <button class="bn-item" id="bn-notifs" onclick="switchTabMobile('notifications',this)">
-    <span class="bn-icon">🔔</span><span class="bn-label">Notifs</span>
-  </button>
-  <button class="bn-item" id="bn-calendrier" onclick="switchTabMobile('calendrier',this)">
-    <span class="bn-icon">📅</span><span class="bn-label">Calendrier</span>
-  </button>
-  <button class="bn-item" id="bn-plus" onclick="toggleMoreMenu()">
-    <span class="bn-icon" id="bn-plus-icon">☰</span><span class="bn-label">Plus</span>
-  </button>
-</nav>
+    <button class="bn-item active" id="bn-home" onclick="switchTabMobile('home',this)">
+      <span class="bn-icon">🏠</span><span class="bn-label">ACCUEIL</span>
+    </button>
+    <button class="bn-item" id="bn-tracabilite" onclick="switchTabMobile('tracabilite',this)">
+      <span class="bn-icon">✅</span><span class="bn-label">SUIVI</span>
+    </button>
+    <button class="bn-item" id="bn-notifications" onclick="switchTabMobile('notifications',this)">
+      <span class="bn-icon">🔔</span><span class="bn-label">NOTIFS</span>
+    </button>
+    <button class="bn-item" id="bn-calendrier" onclick="switchTabMobile('calendrier',this)">
+      <span class="bn-icon">📅</span><span class="bn-label">CALENDRIER</span>
+    </button>
+    <button class="bn-item" id="bn-more" onclick="toggleMoreMenu()">
+      <span class="bn-icon">☰</span><span class="bn-label">PLUS</span>
+    </button>
+  </nav>
 
 <!-- ══ MENU "PLUS" — Bottom Sheet ══ -->
 <div id="more-overlay" onclick="closeMoreMenu()" style="
@@ -3521,20 +3522,23 @@ try {
   console.warn('⚠️ Firebase init failed:', e);
 }
 
-// ── DONNÉES MEMBRES INTÉGRÉES (fallback garanti) ──
-// Ces données sont toujours disponibles même sans Firebase
+// ── Données membres intégrées (fallback garanti) ──
 const MEMBRES_ANCIENS_DEFAULT = [
-  'Ramona 1','Barbara 2',"Jeanne d'arc",'Michelle 1','Michelle 2',
+  'Ramona 1','Barbara 2',"Jeanne d'arc",'Maguy 2','Michelle 2',
   'Leticia 1','Ramona 2','Emmanuel  2','Marcial','Viviane 2',
   'Estelle 1','Isabelle','Ndebi  2','Maxime 1','Leticia 3',
   'Emmanuel  1','Viviane 1','Nadia','Estelle 2','Maxime 2',
   'Maguy 1','Barbara 1','Nicole 1','Mibelle','Nicole 2',
   'Leticia 2','Axelle','Frechnele','Bertrand 2','Ndebi  1',
-  'Maguy 2','Bertrand 1'
+  'Michelle 1','Bertrand 1'
 ];
 const MEMBRES_NOUVEAUX_DEFAULT = ['Kevin','Damarisse','Raisa'];
 
-// Appliquer les données par défaut si G est vide
+// ── Ordre du tirage RÉEL (Maguy 2 à la sem 4, Michelle 1 à la sem 31) ──
+// drawn[i] = index du membre dans members[] pour la semaine i+1
+const DRAWN_ANCIENS_REEL = [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26,27,28,29,30,31];
+// Note: members[3]='Maguy 2', members[30]='Michelle 1' avec l'ordre ci-dessus
+
 function appliquerDonneesDefaut() {
   if (!G.anc.members.length) {
     G.anc.members = [...MEMBRES_ANCIENS_DEFAULT];
@@ -3543,6 +3547,13 @@ function appliquerDonneesDefaut() {
   if (!G.nouv.members.length) {
     G.nouv.members = [...MEMBRES_NOUVEAUX_DEFAULT];
     console.log('✅ Membres nouveaux chargés depuis données intégrées');
+  }
+  // S'assurer que drawn est dans le bon ordre [0,1,2,...,31]
+  if (!G.anc.drawn.length) {
+    G.anc.drawn = DRAWN_ANCIENS_REEL;
+  }
+  if (!G.nouv.drawn.length) {
+    G.nouv.drawn = [0,1,2];
   }
 }
 
