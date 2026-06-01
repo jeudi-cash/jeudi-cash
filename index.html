@@ -3334,7 +3334,7 @@ function setupNodeListener(key) {
 // ═══════════════════════════════════════
 let COTISATION = +(localStorage.getItem('jc2_cot')    || 200);
 let DEVISE     =   localStorage.getItem('jc2_devise') || '$ CAD';
-let startDate  =   localStorage.getItem('jc2_start')  || '2026-05-14';
+let startDate  =   localStorage.getItem('jc2_start')  || '2026-05-07';
 let G = {
   anc:  { members:JSON.parse(localStorage.getItem('jc2_anc_members')||'[]'),  drawn:JSON.parse(localStorage.getItem('jc2_anc_drawn')||'[]'),  schedule:JSON.parse(localStorage.getItem('jc2_anc_schedule')||'[]') },
   nouv: { members:JSON.parse(localStorage.getItem('jc2_nouv_members')||'[]'), drawn:JSON.parse(localStorage.getItem('jc2_nouv_drawn')||'[]'), schedule:JSON.parse(localStorage.getItem('jc2_nouv_schedule')||'[]') }
@@ -4578,7 +4578,7 @@ function init() {
   document.getElementById('cfg-cot').value    = COTISATION;
   document.getElementById('cfg-devise').value = DEVISE;
   if (!startDate || startDate === '') {
-    startDate = '2026-05-14';
+    startDate = '2026-05-07';
     localStorage.setItem('jc2_start', startDate);
   }
   document.getElementById('cfg-date').value = startDate;
