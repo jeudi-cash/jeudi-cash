@@ -3249,7 +3249,7 @@ const MEMBRES_ANCIENS_DEFAULT = [
   'Maguy 1','Barbara 1','Nicole 1','Mibelle','Nicole 2',
   'Leticia 2','Axelle','Frechnele','Bertrand 2','Ndebi  1',
   'Michelle 1','Bertrand 1'
-];
+]; // Ordre réel : échanges Leticia3↔Ramona1 (sem1↔15) et Michelle1↔Maguy2 (sem4↔31)
 const MEMBRES_NOUVEAUX_DEFAULT = ['Kevin','Damarisse','Raisa'];
 
 // ── Ordre du tirage RÉEL (Maguy 2 à la sem 4, Michelle 1 à la sem 31) ──
@@ -3334,7 +3334,7 @@ function setupNodeListener(key) {
 // ═══════════════════════════════════════
 let COTISATION = +(localStorage.getItem('jc2_cot')    || 200);
 let DEVISE     =   localStorage.getItem('jc2_devise') || '$ CAD';
-let startDate  =   localStorage.getItem('jc2_start')  || '2026-05-07';
+let startDate  =   localStorage.getItem('jc2_start')  || '2026-05-14';
 let G = {
   anc:  { members:JSON.parse(localStorage.getItem('jc2_anc_members')||'[]'),  drawn:JSON.parse(localStorage.getItem('jc2_anc_drawn')||'[]'),  schedule:JSON.parse(localStorage.getItem('jc2_anc_schedule')||'[]') },
   nouv: { members:JSON.parse(localStorage.getItem('jc2_nouv_members')||'[]'), drawn:JSON.parse(localStorage.getItem('jc2_nouv_drawn')||'[]'), schedule:JSON.parse(localStorage.getItem('jc2_nouv_schedule')||'[]') }
@@ -4578,7 +4578,7 @@ function init() {
   document.getElementById('cfg-cot').value    = COTISATION;
   document.getElementById('cfg-devise').value = DEVISE;
   if (!startDate || startDate === '') {
-    startDate = '2026-05-07';
+    startDate = '2026-05-14';
     localStorage.setItem('jc2_start', startDate);
   }
   document.getElementById('cfg-date').value = startDate;
@@ -8357,7 +8357,7 @@ function getCurrentWeekBenef() {
   const { thursday } = getCurrentWeekBounds();
 
   // Numéro de semaine depuis le 07 mai 2026
-  const realStart   = new Date('2026-05-07T12:00:00');
+  const realStart   = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-14T12:00:00');
   const diffMs      = thursday - realStart;
   const realWeekNum = Math.max(1, Math.round(diffMs / (7*24*3600*1000)) + 1);
 
