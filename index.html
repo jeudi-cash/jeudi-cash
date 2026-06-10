@@ -5364,32 +5364,22 @@ function populateSwapMemberSelect(side){
   if(!gKey){ sel.disabled=true; return; }
   sel.disabled = false;
 
-  const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
+  const members  = (Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{})).filter(n=>n);
   const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
   const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
-  const ancLen   = (Array.isArray(G.anc.members) ? G.anc.members : Object.values(G.anc.members||{})).filter(n=>n).length;
 
-  members.filter(n=>n).forEach((name, memberIdx) => {
-    // Position dans drawn[] = index de la semaine
-    const drawPos = drawn.indexOf(memberIdx);
-    // Position dans schedule = drawPos (drawn[drawPos] = memberIdx)
-    const sched = drawPos >= 0 && drawPos < schedule.length ? schedule[drawPos] : null;
-    const offset = gKey === 'nouv' ? ancLen : 0;
-    const semNum = sched ? sched.week : (drawPos >= 0 ? offset + drawPos + 1 : null);
-    const wk = semNum ? 'Sem. #' + String(semNum).padStart(3,'0') + (sched ? ' — ' + sched.date : '') : '(non assigné)';
-    const dejaTire = drawn.includes(memberIdx) ? ' ✅' : '';
+  // drawn[i] = index du membre dans members[] pour la semaine i+1
+  // Donc pour un membre à memberIdx, sa semaine = position où drawn[pos] === memberIdx
+  members.forEach((name, memberIdx) => {
+    // Trouver la position dans drawn
+    const schedPos = drawn.findIndex(d => Number(d) === memberIdx);
+    const sched = schedPos >= 0 && schedPos < schedule.length ? schedule[schedPos] : null;
+    const wk = sched ? ('Sem. #' + String(sched.week).padStart(3,'0') + ' — ' + (sched.date||'')) : '(non assigné)';
     const opt = document.createElement('option');
-    opt.value = gKey + '|' + memberIdx + '|' + drawPos;
-    opt.textContent = name + dejaTire + ' — ' + wk;
+    opt.value = gKey + '|' + memberIdx + '|' + schedPos;
+    opt.textContent = name + ' — ' + wk;
     sel.appendChild(opt);
   });
-
-  if(sel.options.length === 1) {
-    const opt = document.createElement('option');
-    opt.disabled = true;
-    opt.textContent = '— Aucun membre trouvé —';
-    sel.appendChild(opt);
-  }
 }
 
 function onSwapGroupChange(side){ populateSwapMemberSelect(side); clearSwapPreview(side); checkSwapReady(); }
@@ -5434,43 +5424,46 @@ function doSwap(){
   if(!vA||!vB||vA===vB) return;
 
   const partsA = vA.split('|'), partsB = vB.split('|');
-  const gA = partsA[0], memberIdxA = parseInt(partsA[1]), drawPosA = parseInt(partsA[2]);
-  const gB = partsB[0], memberIdxB = parseInt(partsB[1]), drawPosB = parseInt(partsB[2]);
+  const gA = partsA[0], memberIdxA = parseInt(partsA[1]), schedPosA = parseInt(partsA[2]);
+  const gB = partsB[0], memberIdxB = parseInt(partsB[1]), schedPosB = parseInt(partsB[2]);
 
   if(!db){ toast('⚠️ Firebase non connecté', true); return; }
+  if(schedPosA < 0 || schedPosB < 0){
+    toast('⚠️ Membres introuvables dans le calendrier', true); return;
+  }
 
-  const schedA = (Array.isArray(G[gA].schedule) ? G[gA].schedule : Object.values(G[gA].schedule||{})).slice();
-  const schedB = gA===gB ? schedA : (Array.isArray(G[gB].schedule) ? G[gB].schedule : Object.values(G[gB].schedule||{})).slice();
-
-  const membersA = Array.isArray(G[gA].members) ? G[gA].members : Object.values(G[gA].members||{});
-  const membersB = Array.isArray(G[gB].members) ? G[gB].members : Object.values(G[gB].members||{});
+  const membersA = (Array.isArray(G[gA].members) ? G[gA].members : Object.values(G[gA].members||{})).filter(n=>n);
+  const membersB = (Array.isArray(G[gB].members) ? G[gB].members : Object.values(G[gB].members||{})).filter(n=>n);
   const nameA = membersA[memberIdxA] || '—';
   const nameB = membersB[memberIdxB] || '—';
 
-  if(drawPosA < 0 || drawPosA >= schedA.length || drawPosB < 0 || drawPosB >= schedB.length){
-    toast('⚠️ Position invalide dans le calendrier', true); return;
-  }
+  const schedA = (Array.isArray(G[gA].schedule) ? G[gA].schedule : Object.values(G[gA].schedule||{})).map(s=>Object.assign({},s));
+  const schedB = gA===gB ? schedA : (Array.isArray(G[gB].schedule) ? G[gB].schedule : Object.values(G[gB].schedule||{})).map(s=>Object.assign({},s));
 
-  const slotA = schedA[drawPosA];
-  const slotB = schedB[drawPosB];
+  const slotA = schedA[schedPosA];
+  const slotB = schedB[schedPosB];
+
+  if(!slotA || !slotB){ toast('⚠️ Slots introuvables', true); return; }
 
   const wAb=slotA.week, dAb=slotA.date;
   const wBb=slotB.week, dBb=slotB.date;
 
-  // Échanger week, date, iso entre les deux slots
-  const tmpWeek=slotA.week, tmpDate=slotA.date, tmpIso=slotA.iso;
+  // Échanger week, date, iso
+  const tmp = {week:slotA.week, date:slotA.date, iso:slotA.iso};
   slotA.week=slotB.week; slotA.date=slotB.date; slotA.iso=slotB.iso;
-  slotB.week=tmpWeek;    slotB.date=tmpDate;    slotB.iso=tmpIso;
-
-  const wAa=slotA.week, dAa=slotA.date;
-  const wBa=slotB.week, dBa=slotB.date;
+  slotB.week=tmp.week;   slotB.date=tmp.date;   slotB.iso=tmp.iso;
 
   // Aussi échanger dans drawn[]
   const drawnA = (Array.isArray(G[gA].drawn) ? G[gA].drawn : Object.values(G[gA].drawn||{})).slice();
   const drawnB = gA===gB ? drawnA : (Array.isArray(G[gB].drawn) ? G[gB].drawn : Object.values(G[gB].drawn||{})).slice();
-  const tmpDraw = drawnA[drawPosA];
-  drawnA[drawPosA] = drawnB[drawPosB];
-  drawnB[drawPosB] = tmpDraw;
+  const tmpD = drawnA[schedPosA];
+  if(gA===gB){
+    drawnA[schedPosA] = drawnB[schedPosB];
+    drawnA[schedPosB] = tmpD;
+  } else {
+    drawnA[schedPosA] = drawnB[schedPosB];
+    drawnB[schedPosB] = tmpD;
+  }
 
   setSyncStatus('saving');
   const updates = {};
@@ -5483,8 +5476,7 @@ function doSwap(){
 
   db.ref('jeudi_cash').update(updates).then(() => {
     setSyncStatus('saved');
-    G[gA].schedule = schedA;
-    G[gA].drawn    = drawnA;
+    G[gA].schedule = schedA; G[gA].drawn = drawnA;
     if(gA!==gB){ G[gB].schedule = schedB; G[gB].drawn = drawnB; }
     localStorage.setItem('jc2_'+gA+'_schedule', JSON.stringify(schedA));
     localStorage.setItem('jc2_'+gA+'_drawn',    JSON.stringify(drawnA));
@@ -5493,41 +5485,33 @@ function doSwap(){
       localStorage.setItem('jc2_'+gB+'_drawn',    JSON.stringify(drawnB));
     }
 
-    // Log échange
     const entry = {
       id:Date.now(), ts:new Date().toLocaleString('fr-CA'),
-      aName:nameA, aGroup:gA, aWeekBefore:wAb, aDateBefore:dAb, aWeekAfter:wAa, aDateAfter:dAa,
-      bName:nameB, bGroup:gB, bWeekBefore:wBb, bDateBefore:dBb, bWeekAfter:wBa, bDateAfter:dBa,
+      aName:nameA, aGroup:gA, aWeekBefore:wAb, aDateBefore:dAb, aWeekAfter:slotA.week, aDateAfter:slotA.date,
+      bName:nameB, bGroup:gB, bWeekBefore:wBb, bDateBefore:dBb, bWeekAfter:slotB.week, bDateAfter:slotB.date,
     };
     swapLog.unshift(entry);
     ls('jc2_swaplog', swapLog);
     db.ref('jeudi_cash/jc2_swaplog').set(swapLog);
 
-    // Afficher résultat
     const resEl = document.getElementById('swap-result');
     if(resEl) resEl.classList.add('visible');
     const rowEl = document.getElementById('swap-result-row');
     if(rowEl) rowEl.innerHTML =
-      '<div class="swap-member-card"><div class="swap-member-card-name">'+esc(nameA)+'</div>' +
-      '<div class="swap-member-card-week">Sem. #'+String(wAb).padStart(3,'0')+' → Sem. #'+String(wAa).padStart(3,'0')+'</div>' +
-      '<div class="swap-member-card-date">'+dAb+' → '+dAa+'</div></div>' +
-      '<div class="swap-arrow-result">⇄</div>' +
-      '<div class="swap-member-card"><div class="swap-member-card-name">'+esc(nameB)+'</div>' +
-      '<div class="swap-member-card-week">Sem. #'+String(wBb).padStart(3,'0')+' → Sem. #'+String(wBa).padStart(3,'0')+'</div>' +
-      '<div class="swap-member-card-date">'+dBb+' → '+dBa+'</div></div>';
-
+      '<div style="text-align:center;padding:10px"><b>'+esc(nameA)+'</b><br>' +
+      'Sem.'+wAb+' → Sem.'+slotA.week+'</div>' +
+      '<div style="font-size:24px;padding:10px">⇄</div>' +
+      '<div style="text-align:center;padding:10px"><b>'+esc(nameB)+'</b><br>' +
+      'Sem.'+wBb+' → Sem.'+slotB.week+'</div>';
     const descEl = document.getElementById('swap-result-desc');
-    if(descEl) descEl.textContent = '✅ ' + nameA + ' et ' + nameB + ' ont échangé leurs places !';
+    if(descEl) descEl.textContent = '✅ '+nameA+' et '+nameB+' ont échangé leurs places !';
 
-    renderSwapLog();
-    renderCalendar();
-    cotisWeek = null;
-    buildCotisWeek();
-    renderHome();
-    toast('✅ Échange confirmé : ' + nameA + ' ↔ ' + nameB);
+    renderSwapLog(); renderCalendar();
+    cotisWeek = null; buildCotisWeek(); renderHome();
+    toast('✅ Échange : '+nameA+' ↔ '+nameB);
   }).catch(err => {
     setSyncStatus('error');
-    toast('⚠️ Erreur Firebase : ' + err.message, true);
+    toast('⚠️ Erreur : '+err.message, true);
   });
 }
 function doSwap(){
