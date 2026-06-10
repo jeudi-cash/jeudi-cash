@@ -5358,29 +5358,32 @@ function exportPDF() {
 //  SWAP
 // ═══════════════════════════════════════
 function populateSwapMemberSelect(side){
-  const gKey = document.getElementById(`sel-${side}-groupe`).value;
-  const sel  = document.getElementById(`sel-${side}-membre`);
+  const gKey = document.getElementById('sel-'+side+'-groupe').value;
+  const sel  = document.getElementById('sel-'+side+'-membre');
   sel.innerHTML = '<option value="">— Membre —</option>';
   if(!gKey){ sel.disabled=true; return; }
   sel.disabled = false;
 
-  // Normaliser en tableaux
   const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
   const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
   const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
+  const ancLen   = (Array.isArray(G.anc.members) ? G.anc.members : Object.values(G.anc.members||{})).filter(n=>n).length;
 
-  members.forEach((name, idx) => {
-    // Chercher dans le schedule par idx
-    const sched = schedule.find(s => s.idx === idx) || {};
-    const wk    = sched.week ? `Sem. #${String(sched.week).padStart(3,'0')} — ${sched.date||''}` : '(non assigné)';
-    const dejaTire = drawn.includes(idx) ? ' ✅' : '';
-    const opt   = document.createElement('option');
-    opt.value   = `${gKey}|${idx}`;
-    opt.textContent = `${name}${dejaTire} — ${wk}`;
+  members.filter(n=>n).forEach((name, memberIdx) => {
+    // Position dans drawn[] = index de la semaine
+    const drawPos = drawn.indexOf(memberIdx);
+    // Position dans schedule = drawPos (drawn[drawPos] = memberIdx)
+    const sched = drawPos >= 0 && drawPos < schedule.length ? schedule[drawPos] : null;
+    const offset = gKey === 'nouv' ? ancLen : 0;
+    const semNum = sched ? sched.week : (drawPos >= 0 ? offset + drawPos + 1 : null);
+    const wk = semNum ? 'Sem. #' + String(semNum).padStart(3,'0') + (sched ? ' — ' + sched.date : '') : '(non assigné)';
+    const dejaTire = drawn.includes(memberIdx) ? ' ✅' : '';
+    const opt = document.createElement('option');
+    opt.value = gKey + '|' + memberIdx + '|' + drawPos;
+    opt.textContent = name + dejaTire + ' — ' + wk;
     sel.appendChild(opt);
   });
 
-  // Si aucun membre disponible
   if(sel.options.length === 1) {
     const opt = document.createElement('option');
     opt.disabled = true;
@@ -5392,30 +5395,140 @@ function populateSwapMemberSelect(side){
 function onSwapGroupChange(side){ populateSwapMemberSelect(side); clearSwapPreview(side); checkSwapReady(); }
 
 function onSwapMemberChange(side){
-  const val = document.getElementById(`sel-${side}-membre`).value;
+  const val = document.getElementById('sel-'+side+'-membre').value;
   if(!val){ clearSwapPreview(side); checkSwapReady(); return; }
 
-  const [gKey, idxStr] = val.split('|');
-  const iIdx    = parseInt(idxStr);
-  const members = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
-  const schedule= Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
-  const name    = members[iIdx];
-  const sched   = schedule.find(s => s.idx === iIdx) || {};
-  const groupe  = gKey === 'anc' ? '⭐ Ancien' : '🆕 Nouveau';
+  const parts  = val.split('|');
+  const gKey   = parts[0];
+  const memberIdx = parseInt(parts[1]);
+  const drawPos   = parseInt(parts[2]);
+  const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
+  const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
+  const name   = members[memberIdx] || '—';
+  const sched  = drawPos >= 0 && drawPos < schedule.length ? schedule[drawPos] : {};
+  const groupe = gKey === 'anc' ? '⭐ Ancien' : '🆕 Nouveau';
 
-  document.getElementById(`preview-${side}`).classList.add('visible');
-  document.getElementById(`slot-${side}`).classList.add('selected');
-  document.getElementById(`prev-name-${side}`).textContent = name || '—';
-  document.getElementById(`prev-info-${side}`).innerHTML =
-    `Groupe : ${groupe}<br>Semaine : #${sched.week ? String(sched.week).padStart(3,'0') : '—'}<br>Date : ${sched.date||'—'}`;
+  document.getElementById('preview-'+side).classList.add('visible');
+  document.getElementById('slot-'+side).classList.add('selected');
+  document.getElementById('prev-name-'+side).textContent = name;
+  document.getElementById('prev-info-'+side).innerHTML =
+    'Groupe : ' + groupe + '<br>Semaine : #' + (sched.week ? String(sched.week).padStart(3,'0') : '—') + '<br>Date : ' + (sched.date||'—');
   checkSwapReady();
 }
-function clearSwapPreview(side){document.getElementById(`preview-${side}`).classList.remove('visible');document.getElementById(`slot-${side}`).classList.remove('selected');}
+
+function clearSwapPreview(side){
+  document.getElementById('preview-'+side).classList.remove('visible');
+  document.getElementById('slot-'+side).classList.remove('selected');
+}
+
 function checkSwapReady(){
-  const vA=document.getElementById('sel-a-membre').value,vB=document.getElementById('sel-b-membre').value,btn=document.getElementById('btn-swap');
-  if(!vA||!vB){btn.disabled=true;return;}
-  if(vA===vB){btn.disabled=true;return;}
-  btn.disabled=false;
+  const vA=document.getElementById('sel-a-membre').value;
+  const vB=document.getElementById('sel-b-membre').value;
+  const btn=document.getElementById('btn-swap');
+  btn.disabled = (!vA || !vB || vA===vB);
+}
+
+function doSwap(){
+  const vA=document.getElementById('sel-a-membre').value;
+  const vB=document.getElementById('sel-b-membre').value;
+  if(!vA||!vB||vA===vB) return;
+
+  const partsA = vA.split('|'), partsB = vB.split('|');
+  const gA = partsA[0], memberIdxA = parseInt(partsA[1]), drawPosA = parseInt(partsA[2]);
+  const gB = partsB[0], memberIdxB = parseInt(partsB[1]), drawPosB = parseInt(partsB[2]);
+
+  if(!db){ toast('⚠️ Firebase non connecté', true); return; }
+
+  const schedA = (Array.isArray(G[gA].schedule) ? G[gA].schedule : Object.values(G[gA].schedule||{})).slice();
+  const schedB = gA===gB ? schedA : (Array.isArray(G[gB].schedule) ? G[gB].schedule : Object.values(G[gB].schedule||{})).slice();
+
+  const membersA = Array.isArray(G[gA].members) ? G[gA].members : Object.values(G[gA].members||{});
+  const membersB = Array.isArray(G[gB].members) ? G[gB].members : Object.values(G[gB].members||{});
+  const nameA = membersA[memberIdxA] || '—';
+  const nameB = membersB[memberIdxB] || '—';
+
+  if(drawPosA < 0 || drawPosA >= schedA.length || drawPosB < 0 || drawPosB >= schedB.length){
+    toast('⚠️ Position invalide dans le calendrier', true); return;
+  }
+
+  const slotA = schedA[drawPosA];
+  const slotB = schedB[drawPosB];
+
+  const wAb=slotA.week, dAb=slotA.date;
+  const wBb=slotB.week, dBb=slotB.date;
+
+  // Échanger week, date, iso entre les deux slots
+  const tmpWeek=slotA.week, tmpDate=slotA.date, tmpIso=slotA.iso;
+  slotA.week=slotB.week; slotA.date=slotB.date; slotA.iso=slotB.iso;
+  slotB.week=tmpWeek;    slotB.date=tmpDate;    slotB.iso=tmpIso;
+
+  const wAa=slotA.week, dAa=slotA.date;
+  const wBa=slotB.week, dBa=slotB.date;
+
+  // Aussi échanger dans drawn[]
+  const drawnA = (Array.isArray(G[gA].drawn) ? G[gA].drawn : Object.values(G[gA].drawn||{})).slice();
+  const drawnB = gA===gB ? drawnA : (Array.isArray(G[gB].drawn) ? G[gB].drawn : Object.values(G[gB].drawn||{})).slice();
+  const tmpDraw = drawnA[drawPosA];
+  drawnA[drawPosA] = drawnB[drawPosB];
+  drawnB[drawPosB] = tmpDraw;
+
+  setSyncStatus('saving');
+  const updates = {};
+  updates['jc2_'+gA+'_schedule'] = schedA;
+  updates['jc2_'+gA+'_drawn']    = drawnA;
+  if(gA!==gB){
+    updates['jc2_'+gB+'_schedule'] = schedB;
+    updates['jc2_'+gB+'_drawn']    = drawnB;
+  }
+
+  db.ref('jeudi_cash').update(updates).then(() => {
+    setSyncStatus('saved');
+    G[gA].schedule = schedA;
+    G[gA].drawn    = drawnA;
+    if(gA!==gB){ G[gB].schedule = schedB; G[gB].drawn = drawnB; }
+    localStorage.setItem('jc2_'+gA+'_schedule', JSON.stringify(schedA));
+    localStorage.setItem('jc2_'+gA+'_drawn',    JSON.stringify(drawnA));
+    if(gA!==gB){
+      localStorage.setItem('jc2_'+gB+'_schedule', JSON.stringify(schedB));
+      localStorage.setItem('jc2_'+gB+'_drawn',    JSON.stringify(drawnB));
+    }
+
+    // Log échange
+    const entry = {
+      id:Date.now(), ts:new Date().toLocaleString('fr-CA'),
+      aName:nameA, aGroup:gA, aWeekBefore:wAb, aDateBefore:dAb, aWeekAfter:wAa, aDateAfter:dAa,
+      bName:nameB, bGroup:gB, bWeekBefore:wBb, bDateBefore:dBb, bWeekAfter:wBa, bDateAfter:dBa,
+    };
+    swapLog.unshift(entry);
+    ls('jc2_swaplog', swapLog);
+    db.ref('jeudi_cash/jc2_swaplog').set(swapLog);
+
+    // Afficher résultat
+    const resEl = document.getElementById('swap-result');
+    if(resEl) resEl.classList.add('visible');
+    const rowEl = document.getElementById('swap-result-row');
+    if(rowEl) rowEl.innerHTML =
+      '<div class="swap-member-card"><div class="swap-member-card-name">'+esc(nameA)+'</div>' +
+      '<div class="swap-member-card-week">Sem. #'+String(wAb).padStart(3,'0')+' → Sem. #'+String(wAa).padStart(3,'0')+'</div>' +
+      '<div class="swap-member-card-date">'+dAb+' → '+dAa+'</div></div>' +
+      '<div class="swap-arrow-result">⇄</div>' +
+      '<div class="swap-member-card"><div class="swap-member-card-name">'+esc(nameB)+'</div>' +
+      '<div class="swap-member-card-week">Sem. #'+String(wBb).padStart(3,'0')+' → Sem. #'+String(wBa).padStart(3,'0')+'</div>' +
+      '<div class="swap-member-card-date">'+dBb+' → '+dBa+'</div></div>';
+
+    const descEl = document.getElementById('swap-result-desc');
+    if(descEl) descEl.textContent = '✅ ' + nameA + ' et ' + nameB + ' ont échangé leurs places !';
+
+    renderSwapLog();
+    renderCalendar();
+    cotisWeek = null;
+    buildCotisWeek();
+    renderHome();
+    toast('✅ Échange confirmé : ' + nameA + ' ↔ ' + nameB);
+  }).catch(err => {
+    setSyncStatus('error');
+    toast('⚠️ Erreur Firebase : ' + err.message, true);
+  });
 }
 function doSwap(){
   const vA=document.getElementById('sel-a-membre').value, vB=document.getElementById('sel-b-membre').value;
