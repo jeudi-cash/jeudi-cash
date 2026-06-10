@@ -5368,21 +5368,149 @@ function populateSwapMemberSelect(side){
   const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
   const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
 
-  // IMPORTANT: utiliser l'index original (pas filtré) pour matcher avec drawn
-  members.forEach(function(name, memberIdx) {
-    if(!name) return; // skip empty
-
-    // drawn[schedPos] === memberIdx → trouver la semaine de ce membre
-    const schedPos = drawn.findIndex(function(d){ return Number(d) === memberIdx; });
-    const sched = (schedPos >= 0 && schedPos < schedule.length) ? schedule[schedPos] : null;
+  // Pour chaque position dans drawn (= chaque semaine tirée)
+  // drawn[schedPos] = memberIdx → members[memberIdx] = nom
+  drawn.forEach(function(memberIdxRaw, schedPos) {
+    const memberIdx = Number(memberIdxRaw);
+    const name = members[memberIdx];
+    if(!name) return;
+    const sched = schedPos < schedule.length ? schedule[schedPos] : null;
     const wk = sched
       ? ('Sem. #' + String(sched.week).padStart(3,'0') + ' — ' + (sched.date||''))
-      : '(non assigné)';
-
+      : 'Sem. #' + String(schedPos+1).padStart(3,'0');
     const opt = document.createElement('option');
-    opt.value = gKey + '|' + memberIdx + '|' + schedPos;
+    // valeur = groupe|schedPos (position dans schedule, directement)
+    opt.value = gKey + '|' + schedPos;
     opt.textContent = name + ' — ' + wk;
     sel.appendChild(opt);
+  });
+}
+
+function onSwapGroupChange(side){ populateSwapMemberSelect(side); clearSwapPreview(side); checkSwapReady(); }
+
+function onSwapMemberChange(side){
+  const val = document.getElementById('sel-'+side+'-membre').value;
+  if(!val){ clearSwapPreview(side); checkSwapReady(); return; }
+
+  const parts   = val.split('|');
+  const gKey    = parts[0];
+  const schedPos = parseInt(parts[1]);
+  const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
+  const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
+  const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
+  const name    = members[Number(drawn[schedPos])] || '—';
+  const sched   = schedPos < schedule.length ? schedule[schedPos] : {};
+  const groupe  = gKey === 'anc' ? '⭐ Ancien' : '🆕 Nouveau';
+
+  document.getElementById('preview-'+side).classList.add('visible');
+  document.getElementById('slot-'+side).classList.add('selected');
+  document.getElementById('prev-name-'+side).textContent = name;
+  document.getElementById('prev-info-'+side).innerHTML =
+    'Groupe : ' + groupe + '<br>Semaine : #' + (sched.week ? String(sched.week).padStart(3,'0') : '—') + '<br>Date : ' + (sched.date||'—');
+  checkSwapReady();
+}
+
+function clearSwapPreview(side){
+  document.getElementById('preview-'+side).classList.remove('visible');
+  document.getElementById('slot-'+side).classList.remove('selected');
+}
+
+function checkSwapReady(){
+  const vA=document.getElementById('sel-a-membre').value;
+  const vB=document.getElementById('sel-b-membre').value;
+  const btn=document.getElementById('btn-swap');
+  btn.disabled = (!vA || !vB || vA===vB);
+}
+
+function doSwap(){
+  const vA=document.getElementById('sel-a-membre').value;
+  const vB=document.getElementById('sel-b-membre').value;
+  if(!vA||!vB||vA===vB) return;
+
+  const partsA  = vA.split('|'), partsB = vB.split('|');
+  const gA      = partsA[0], schedPosA = parseInt(partsA[1]);
+  const gB      = partsB[0], schedPosB = parseInt(partsB[1]);
+
+  if(!db){ toast('⚠️ Firebase non connecté', true); return; }
+
+  const membersA = Array.isArray(G[gA].members) ? G[gA].members : Object.values(G[gA].members||{});
+  const membersB = Array.isArray(G[gB].members) ? G[gB].members : Object.values(G[gB].members||{});
+  const drawnA   = (Array.isArray(G[gA].drawn)  ? G[gA].drawn   : Object.values(G[gA].drawn||{})).slice();
+  const drawnB   = gA===gB ? drawnA : (Array.isArray(G[gB].drawn) ? G[gB].drawn : Object.values(G[gB].drawn||{})).slice();
+  const schedA   = (Array.isArray(G[gA].schedule) ? G[gA].schedule : Object.values(G[gA].schedule||{})).map(s=>Object.assign({},s));
+  const schedB   = gA===gB ? schedA : (Array.isArray(G[gB].schedule) ? G[gB].schedule : Object.values(G[gB].schedule||{})).map(s=>Object.assign({},s));
+
+  const nameA = membersA[Number(drawnA[schedPosA])] || '—';
+  const nameB = membersB[Number(drawnB[schedPosB])] || '—';
+  const wAb = schedA[schedPosA]?.week, dAb = schedA[schedPosA]?.date;
+  const wBb = schedB[schedPosB]?.week, dBb = schedB[schedPosB]?.date;
+
+  // Échanger les entrées du schedule
+  const tmpSched = Object.assign({}, schedA[schedPosA]);
+  schedA[schedPosA].week = schedB[schedPosB].week;
+  schedA[schedPosA].date = schedB[schedPosB].date;
+  schedA[schedPosA].iso  = schedB[schedPosB].iso;
+  schedB[schedPosB].week = tmpSched.week;
+  schedB[schedPosB].date = tmpSched.date;
+  schedB[schedPosB].iso  = tmpSched.iso;
+
+  // Échanger les entrées du drawn
+  const tmpDrA = drawnA[schedPosA];
+  if(gA===gB){
+    drawnA[schedPosA] = drawnA[schedPosB];
+    drawnA[schedPosB] = tmpDrA;
+  } else {
+    drawnA[schedPosA] = drawnB[schedPosB];
+    drawnB[schedPosB] = tmpDrA;
+  }
+
+  setSyncStatus('saving');
+  const updates = {};
+  updates['jc2_'+gA+'_schedule'] = schedA;
+  updates['jc2_'+gA+'_drawn']    = drawnA;
+  if(gA!==gB){
+    updates['jc2_'+gB+'_schedule'] = schedB;
+    updates['jc2_'+gB+'_drawn']    = drawnB;
+  }
+
+  db.ref('jeudi_cash').update(updates).then(function() {
+    setSyncStatus('saved');
+    G[gA].schedule = schedA; G[gA].drawn = drawnA;
+    if(gA!==gB){ G[gB].schedule = schedB; G[gB].drawn = drawnB; }
+    localStorage.setItem('jc2_'+gA+'_schedule', JSON.stringify(schedA));
+    localStorage.setItem('jc2_'+gA+'_drawn',    JSON.stringify(drawnA));
+    if(gA!==gB){
+      localStorage.setItem('jc2_'+gB+'_schedule', JSON.stringify(schedB));
+      localStorage.setItem('jc2_'+gB+'_drawn',    JSON.stringify(drawnB));
+    }
+
+    const entry = {
+      id:Date.now(), ts:new Date().toLocaleString('fr-CA'),
+      aName:nameA, aGroup:gA, aWeekBefore:wAb, aDateBefore:dAb,
+      aWeekAfter:schedA[schedPosA]?.week, aDateAfter:schedA[schedPosA]?.date,
+      bName:nameB, bGroup:gB, bWeekBefore:wBb, bDateBefore:dBb,
+      bWeekAfter:schedB[schedPosB]?.week, bDateAfter:schedB[schedPosB]?.date,
+    };
+    swapLog.unshift(entry);
+    ls('jc2_swaplog', swapLog);
+    db.ref('jeudi_cash/jc2_swaplog').set(swapLog);
+
+    const resEl = document.getElementById('swap-result');
+    if(resEl) resEl.classList.add('visible');
+    const rowEl = document.getElementById('swap-result-row');
+    if(rowEl) rowEl.innerHTML =
+      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameA)+'</b><br>Sem.'+wAb+' → Sem.'+schedA[schedPosA]?.week+'</div>' +
+      '<div style="font-size:24px">⇄</div>' +
+      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameB)+'</b><br>Sem.'+wBb+' → Sem.'+schedB[schedPosB]?.week+'</div>';
+    const descEl = document.getElementById('swap-result-desc');
+    if(descEl) descEl.textContent = '✅ '+nameA+' et '+nameB+' ont échangé leurs places !';
+
+    renderSwapLog(); renderCalendar();
+    cotisWeek=null; buildCotisWeek(); renderHome();
+    toast('✅ Échange : '+nameA+' ↔ '+nameB);
+  }).catch(function(err){
+    setSyncStatus('error');
+    toast('⚠️ Erreur : '+err.message, true);
   });
 }
 
