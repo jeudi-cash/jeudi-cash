@@ -5364,17 +5364,21 @@ function populateSwapMemberSelect(side){
   if(!gKey){ sel.disabled=true; return; }
   sel.disabled = false;
 
-  const members  = (Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{})).filter(n=>n);
+  const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
   const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
   const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
 
-  // drawn[i] = index du membre dans members[] pour la semaine i+1
-  // Donc pour un membre à memberIdx, sa semaine = position où drawn[pos] === memberIdx
-  members.forEach((name, memberIdx) => {
-    // Trouver la position dans drawn
-    const schedPos = drawn.findIndex(d => Number(d) === memberIdx);
-    const sched = schedPos >= 0 && schedPos < schedule.length ? schedule[schedPos] : null;
-    const wk = sched ? ('Sem. #' + String(sched.week).padStart(3,'0') + ' — ' + (sched.date||'')) : '(non assigné)';
+  // IMPORTANT: utiliser l'index original (pas filtré) pour matcher avec drawn
+  members.forEach(function(name, memberIdx) {
+    if(!name) return; // skip empty
+
+    // drawn[schedPos] === memberIdx → trouver la semaine de ce membre
+    const schedPos = drawn.findIndex(function(d){ return Number(d) === memberIdx; });
+    const sched = (schedPos >= 0 && schedPos < schedule.length) ? schedule[schedPos] : null;
+    const wk = sched
+      ? ('Sem. #' + String(sched.week).padStart(3,'0') + ' — ' + (sched.date||''))
+      : '(non assigné)';
+
     const opt = document.createElement('option');
     opt.value = gKey + '|' + memberIdx + '|' + schedPos;
     opt.textContent = name + ' — ' + wk;
@@ -5429,7 +5433,8 @@ function doSwap(){
 
   if(!db){ toast('⚠️ Firebase non connecté', true); return; }
   if(schedPosA < 0 || schedPosB < 0){
-    toast('⚠️ Membres introuvables dans le calendrier', true); return;
+    console.warn('schedPosA:', schedPosA, 'schedPosB:', schedPosB, 'vA:', vA, 'vB:', vB);
+    toast('⚠️ Position invalide (schedPos: '+schedPosA+'/'+schedPosB+')', true); return;
   }
 
   const membersA = (Array.isArray(G[gA].members) ? G[gA].members : Object.values(G[gA].members||{})).filter(n=>n);
