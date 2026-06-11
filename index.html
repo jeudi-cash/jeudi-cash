@@ -6217,7 +6217,7 @@ function declencherRappelJeudiMatin() {
   if (!benef) return;
   const potStr  = potDuBenefStr(benef.name);
   const benefDB = memberDB.find(x => x.nom === benef.name || x.nom?.trim() === benef.name?.trim());
-  const interac = benefDB?.tel || benefDB?.interac || '';
+  const interac = benefDB?.interac || benefDB?.tel || '';
   const now     = new Date();
   const dateStr = now.toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
 
@@ -8214,7 +8214,7 @@ function renderAlertes() {
         const init = m.name.split(' ').map(w=>w[0]||'').join('').substring(0,2).toUpperCase();
         const _benef = getCurrentWeekBenef();
         const _benefDB = _benef ? memberDB.find(x=>x.nom===_benef.name||x.nom?.trim()===_benef.name?.trim()) : null;
-        const _interac = _benefDB?.tel || _benefDB?.interac || 'voir le groupe';
+        const _interac = _benefDB?.interac || _benefDB?.tel || 'voir le groupe';
         const msgAlerte = `Bonjour ${m.name.split(' ')[0]},\n\nNous t'informons que ta cotisation *Jeudi Cash* de *${COTISATION} ${DEVISE}* n'a pas encore été reçue.\n\n💳 *Envoie par Interac (dépôt direct) à :*\n👤 ${_benef?.name || '—'}\n📱 ${_interac}\n\n📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\nMerci pour ta collaboration ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
         const waBtn = tel ? `<a href="https://wa.me/${tel}?text=${encodeURIComponent(msgAlerte)}" class="notif-btn-wa" style="text-decoration:none;font-size:11px;padding:6px 12px;flex-shrink:0">🚨 Alerter</a>` : '';
         return `<div class="alerte-row"><div class="mn-avatar av-${m.groupe}" style="width:36px;height:36px;font-size:14px">${init}</div><div class="mn-info" style="flex:1"><div class="mn-name">${esc(m.name)}</div><div class="alerte-time">${dbM?.tel||'Pas de tél.'}</div></div>${waBtn}</div>`;
@@ -8285,7 +8285,7 @@ function renderRetards() {
     const waMsg = encodeURIComponent((function(){
         var b=getCurrentWeekBenef();
         var bdb=b?memberDB.find(function(x){return x.nom===b.name||x.nom?.trim()===b.name?.trim();}):null;
-        var itc=bdb?.tel||bdb?.interac||'voir le groupe';
+        var itc=bdb?.interac||bdb?.tel||'voir le groupe';
         return 'Bonjour '+m.name.split(' ')[0]+',\n\nNous t\'informons que ta cotisation *Jeudi Cash* de *'+COTISATION+' '+DEVISE+'* n\'est pas encore reçue.\n\n💳 *Envoie par Interac (dépôt direct) à :*\n👤 '+(b?.name||'—')+'\n📱 '+itc+'\n\n📅 Merci d\'envoyer ton virement *aujourd\'hui avant 23h59*.\n\nMerci pour ta ponctualité ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦';
       })());
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b0)">' +
@@ -8666,7 +8666,7 @@ function renderTracabilite() {
     const paidAt = m.paidAt ? ' · ' + m.paidAt.split(' ')[0] : '';
     const _benef   = getCurrentWeekBenef();
     const _benefDB = _benef ? memberDB.find(x=>x.nom===_benef.name||x.nom?.trim()===_benef.name?.trim()) : null;
-    const _interac = _benefDB?.tel || _benefDB?.interac || 'voir le groupe';
+    const _interac = _benefDB?.interac || _benefDB?.tel || 'voir le groupe';
     const waMsg  = encodeURIComponent(
       `Bonjour ${m.name.split(' ')[0]},\n\n` +
       `Nous t'informons que ta cotisation *Jeudi Cash* de *${COTISATION} ${DEVISE}* n'a pas encore été reçue.\n\n` +
@@ -9603,7 +9603,7 @@ function renderNotifications() {
 
   // ── Numéro Interac du bénéficiaire ──
   const benefDB      = benef ? memberDB.find(x => x.nom === benef.name || x.nom?.trim() === benef.name?.trim()) : null;
-  const benefInterac = benefDB?.tel || benefDB?.interac || '';
+  const benefInterac = benefDB?.interac || benefDB?.tel || '';
   const interacLine  = benefInterac ? `\n📱 *Numéro Interac (dépôt direct) : ${benefInterac}*` : '';
 
   const groupMsg = `🏦 *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')}*
@@ -9777,7 +9777,7 @@ function generateResumeMsg() {
   const unpaid = allM.filter(m => !m.paid);
   const benef  = getCurrentWeekBenef();
   const dbBenef= benef ? memberDB.find(x=>x.nom===benef.name||x.nom?.trim()===benef.name?.trim()) : null;
-  const interac= dbBenef?.tel || dbBenef?.interac || '';
+  const interac= dbBenef?.interac || dbBenef?.tel || '';
   const potStr = benef ? potDuBenefStr(benef.name) : '';
   const today  = new Date().toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const weekNum= cotisWeek?.weekNum || 0;
@@ -9835,7 +9835,7 @@ function lancerRappelJeudi() {
   const benef    = getCurrentWeekBenef();
   const dateStr  = today.toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const benefDB  = benef ? memberDB.find(x=>x.nom===benef.name||x.nom?.trim()===benef.name?.trim()) : null;
-  const interac  = benefDB?.tel || benefDB?.interac || '';
+  const interac  = benefDB?.interac || benefDB?.tel || '';
   const potStr   = benef ? potDuBenefStr(benef.name) : '';
   const allM     = cotisWeek ? cotisWeek.membersState : [];
   const paid     = allM.filter(m=>m.paid);
@@ -9930,7 +9930,7 @@ function getGroupMsg() {
     const benef   = getCurrentWeekBenef();
     const dateStr = new Date().toLocaleDateString('fr-CA',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     const benefDB = benef ? memberDB.find(x=>x.nom===benef.name||x.nom?.trim()===benef.name?.trim()) : null;
-    const interac = benefDB?.tel || benefDB?.interac || '';
+    const interac = benefDB?.interac || benefDB?.tel || '';
     msg = `🏦 *JEUDI CASH*\n📅 ${dateStr}\n\n${benef?`🏆 Bénéficiaire : *${benef.name}*\n💰 Montant : *${potDuBenefStr(benef.name)}*\n${interac?`📱 *Numéro Interac (dépôt direct) : ${interac}*\n`:''}`:''}\nMerci d'effectuer votre virement dès aujourd'hui.\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
   }
   return msg;
