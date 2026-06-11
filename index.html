@@ -6224,7 +6224,7 @@ function declencherRappelJeudiMatin() {
   const msg = `🏦 *JEUDI CASH — ${dateStr}*\n\n` +
     `🏆 Bénéficiaire de la semaine : *${benef.name}*\n` +
     `💰 Montant à recevoir : *${potStr}*\n` +
-    (interac ? `📱 *Tél./Interac : ${interac}*\n🔑 Question : JEUDI\n💬 Réponse : CASH\n` : '') +
+    (interac ? `📱 *Numéro Interac (dépôt direct) : ${interac}*\n` : '') +
     `\n📲 *Merci de faire votre virement aujourd'hui !*\n` +
     `\n_Jeudi Cash · Tontine officielle 🏦_`;
 
@@ -8215,7 +8215,7 @@ function renderAlertes() {
         const _benef = getCurrentWeekBenef();
         const _benefDB = _benef ? memberDB.find(x=>x.nom===_benef.name||x.nom?.trim()===_benef.name?.trim()) : null;
         const _interac = _benefDB?.tel || _benefDB?.interac || 'voir le groupe';
-        const msgAlerte = `Bonjour ${m.name.split(' ')[0]},\n\nNous t'informons que ta cotisation *Jeudi Cash* de *${COTISATION} ${DEVISE}* n'a pas encore été reçue.\n\n💳 *Envoie ton virement Interac à :*\n👤 ${_benef?.name || '—'}\n📱 ${_interac}\n🔑 Question : JEUDI | Réponse : CASH\n\n📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\nMerci pour ta collaboration ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
+        const msgAlerte = `Bonjour ${m.name.split(' ')[0]},\n\nNous t'informons que ta cotisation *Jeudi Cash* de *${COTISATION} ${DEVISE}* n'a pas encore été reçue.\n\n💳 *Envoie par Interac (dépôt direct) à :*\n👤 ${_benef?.name || '—'}\n📱 ${_interac}\n\n📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\nMerci pour ta collaboration ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
         const waBtn = tel ? `<a href="https://wa.me/${tel}?text=${encodeURIComponent(msgAlerte)}" class="notif-btn-wa" style="text-decoration:none;font-size:11px;padding:6px 12px;flex-shrink:0">🚨 Alerter</a>` : '';
         return `<div class="alerte-row"><div class="mn-avatar av-${m.groupe}" style="width:36px;height:36px;font-size:14px">${init}</div><div class="mn-info" style="flex:1"><div class="mn-name">${esc(m.name)}</div><div class="alerte-time">${dbM?.tel||'Pas de tél.'}</div></div>${waBtn}</div>`;
       }).join('');
@@ -8286,7 +8286,7 @@ function renderRetards() {
         var b=getCurrentWeekBenef();
         var bdb=b?memberDB.find(function(x){return x.nom===b.name||x.nom?.trim()===b.name?.trim();}):null;
         var itc=bdb?.tel||bdb?.interac||'voir le groupe';
-        return 'Bonjour '+m.name.split(' ')[0]+',\n\nNous t\'informons que ta cotisation *Jeudi Cash* de *'+COTISATION+' '+DEVISE+'* n\'est pas encore reçue.\n\n💳 *Envoie ton virement Interac à :*\n👤 '+(b?.name||'—')+'\n📱 '+itc+'\n🔑 Question : JEUDI | Réponse : CASH\n\n📅 Merci d\'envoyer ton virement *aujourd\'hui avant 23h59*.\n\nMerci pour ta ponctualité ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦';
+        return 'Bonjour '+m.name.split(' ')[0]+',\n\nNous t\'informons que ta cotisation *Jeudi Cash* de *'+COTISATION+' '+DEVISE+'* n\'est pas encore reçue.\n\n💳 *Envoie par Interac (dépôt direct) à :*\n👤 '+(b?.name||'—')+'\n📱 '+itc+'\n\n📅 Merci d\'envoyer ton virement *aujourd\'hui avant 23h59*.\n\nMerci pour ta ponctualité ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦';
       })());
     return '<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--b0)">' +
       '<span style="font-size:20px">❌</span>' +
@@ -8670,10 +8670,10 @@ function renderTracabilite() {
     const waMsg  = encodeURIComponent(
       `Bonjour ${m.name.split(' ')[0]},\n\n` +
       `Nous t'informons que ta cotisation *Jeudi Cash* de *${COTISATION} ${DEVISE}* n'a pas encore été reçue.\n\n` +
-      `💳 *Envoie ton virement Interac à :*\n` +
+      `💳 *Envoie par Interac (dépôt direct) à :*\n` +
       `👤 ${_benef?.name || '—'}\n` +
       `📱 ${_interac}\n` +
-      `🔑 Question : JEUDI | Réponse : CASH\n\n` +
+      `\n` +
       `📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\n` +
       `Merci pour ta ponctualité ! 🙏\n\n` +
       `_Jeudi Cash — Tontine officielle_ 🏦`
@@ -9604,7 +9604,7 @@ function renderNotifications() {
   // ── Numéro Interac du bénéficiaire ──
   const benefDB      = benef ? memberDB.find(x => x.nom === benef.name || x.nom?.trim() === benef.name?.trim()) : null;
   const benefInterac = benefDB?.tel || benefDB?.interac || '';
-  const interacLine  = benefInterac ? `\n📱 *Tél./Interac : ${benefInterac}*\n🔑 Question : JEUDI\n💬 Réponse : CASH` : '';
+  const interacLine  = benefInterac ? `\n📱 *Numéro Interac (dépôt direct) : ${benefInterac}*` : '';
 
   const groupMsg = `🏦 *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')}*
 📅 ${dateStr}
@@ -9636,9 +9636,9 @@ _Jeudi Cash — Tontine officielle_ 🏦`;
       const avatarCls= m.groupe === 'anc' ? 'av-anc' : 'av-nouv';
       // Message individuel avec le numéro Interac du bénéficiaire
       const interacInfo = benefInterac
-        ? `\n\n💳 *Interac du bénéficiaire :*\n*${benefInterac}*\n🔑 Question : JEUDI\n💬 Réponse : CASH`
+        ? `\n\n💳 *Numéro Interac (dépôt direct) :*\n📱 *${benefInterac}*`
         : '';
-      const msg = `Bonjour ${m.name.split(' ')[0]},\n\nBonjour,\n\nNous t'informons que ta cotisation *Jeudi Cash* de cette semaine n'est pas encore reçue.\n\n🏆 Bénéficiaire : *${benef?.name || '—'}*\n💰 Montant : *${COTISATION} ${DEVISE}*${interacInfo}\n🔑 Question : JEUDI | Réponse : CASH\n\n📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\nMerci pour ta ponctualité et ta collaboration ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
+      const msg = `Bonjour ${m.name.split(' ')[0]},\n\nBonjour,\n\nNous t'informons que ta cotisation *Jeudi Cash* de cette semaine n'est pas encore reçue.\n\n🏆 Bénéficiaire : *${benef?.name || '—'}*\n💰 Montant : *${COTISATION} ${DEVISE}*${interacInfo}\n\n\n📅 Merci d'envoyer ton virement *aujourd'hui avant 23h59*.\n\nMerci pour ta ponctualité et ta collaboration ! 🙏\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
       const isIOS    = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const smsSep   = isIOS ? '&' : '?';
       const waBtn = tel
@@ -9787,7 +9787,7 @@ function generateResumeMsg() {
 📅 ${today}
 ${benef ? `
 🏆 Bénéficiaire : *${benef.name}*
-💰 Montant : *${potStr}*${interac ? `\n📱 *Tél./Interac : ${interac}*` : ''}
+💰 Montant : *${potStr}*${interac ? `\n📱 *Numéro Interac (dépôt direct) : ${interac}*` : ''}
 ` : ''}
 📊 *STATUT DES COTISATIONS (${paid.length}/${allM.length})*
 
@@ -9840,7 +9840,7 @@ function lancerRappelJeudi() {
   const allM     = cotisWeek ? cotisWeek.membersState : [];
   const paid     = allM.filter(m=>m.paid);
   const unpaid   = allM.filter(m=>!m.paid);
-  const interacLine = interac ? `\n📱 *Tél./Interac : ${interac}*\n🔑 Question : JEUDI` : '';
+  const interacLine = interac ? `\n📱 *Numéro Interac (dépôt direct) : ${interac}*` : '';
 
   // Construire le message directement sans dépendre du DOM
   const msg = `🏦 *JEUDI CASH — Semaine #${String(benef?.week||0).padStart(3,'0')}*
@@ -9931,7 +9931,7 @@ function getGroupMsg() {
     const dateStr = new Date().toLocaleDateString('fr-CA',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
     const benefDB = benef ? memberDB.find(x=>x.nom===benef.name||x.nom?.trim()===benef.name?.trim()) : null;
     const interac = benefDB?.tel || benefDB?.interac || '';
-    msg = `🏦 *JEUDI CASH*\n📅 ${dateStr}\n\n${benef?`🏆 Bénéficiaire : *${benef.name}*\n💰 Montant : *${potDuBenefStr(benef.name)}*\n${interac?`📱 *Tél./Interac : ${interac}*\n`:''}`:''}\nMerci d'effectuer votre virement dès aujourd'hui.\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
+    msg = `🏦 *JEUDI CASH*\n📅 ${dateStr}\n\n${benef?`🏆 Bénéficiaire : *${benef.name}*\n💰 Montant : *${potDuBenefStr(benef.name)}*\n${interac?`📱 *Numéro Interac (dépôt direct) : ${interac}*\n`:''}`:''}\nMerci d'effectuer votre virement dès aujourd'hui.\n\n_Jeudi Cash — Tontine officielle_ 🏦`;
   }
   return msg;
 }
@@ -10195,7 +10195,7 @@ function genererResumeHebdo() {
   const msg = `📊 *RÉSUMÉ JEUDI CASH — ${dateStr}*\n\n` +
     `🏆 Bénéficiaire : *${benef?.name||'—'}*\n` +
     `💰 Montant du pot : *${potStr}*\n` +
-    (interac ? `📱 *Tél./Interac : ${interac}*\n` : '') +
+    (interac ? `📱 *Numéro Interac (dépôt direct) : ${interac}*\n` : '') +
     `\n📈 *Cotisations semaine #${String(cotisWeek?.weekNum||0).padStart(3,'0')} :*\n` +
     `✅ Payés : *${paid.length}/${allM.length}* (${pct}%)\n` +
     `❌ En attente : *${unpaid.length}*\n` +
