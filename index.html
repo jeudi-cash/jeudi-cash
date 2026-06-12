@@ -390,9 +390,7 @@ h1{
 /* ── ONGLETS ── */
 #db-cards { width:100%; box-sizing:border-box; }
 .family-group { width:100%; box-sizing:border-box; margin-bottom:12px; }
-#mb-panel-fiches { min-height:100px; height:auto !important; position:relative; }
-#tab-membres { height:auto !important; min-height:200px; }
-.tab-panel.active { display:block !important; height:auto !important; min-height:100px; }
+#mb-panel-fiches { min-height:100px; }
 
 /* ── Fiches membres ── */
 .family-avatar-big{
@@ -428,8 +426,8 @@ h1{
 .b-late{ background:rgba(255,77,77,.1);color:var(--red);border:1px solid rgba(255,77,77,.2); }
 .family-toggle{ color:var(--t3);font-size:10px;transition:transform .2s;margin-left:4px; }
 .family-toggle.open{ transform:rotate(180deg); }
-.tab-panel { display: none !important; padding: 16px; overflow:visible; height:auto; }
-.tab-panel.active { display: block !important; overflow:visible !important; height:auto !important; }
+.tab-panel { display: none; }
+.tab-panel.active { display: block; }
 
 /* Sous-panels Suivi — cachés par défaut */
 /* Sous-panels Suivi — cachés par défaut via JS au démarrage */
@@ -1393,13 +1391,6 @@ select{
 /* Retard rows */
 #retards-list{display:flex;flex-direction:column;gap:6px;}
 
-@media(max-width:700px){
-  .stats{grid-template-columns:repeat(3,1fr);}
-  .kpi-row{grid-template-columns:repeat(2,1fr);}
-  .nav-select-wrap{display:block;}
-  .stat-val{font-size:16px;}
-}
-
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
    FICHES MEMBRES — DB CARDS
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
@@ -1462,38 +1453,68 @@ select{
 .back-btn:hover{background:var(--s3);color:var(--t1);}
 
 /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-   RESPONSIVE
+   RESPONSIVE — SYSTÈME UNIFIÉ (v2026-06)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ */
-@media(max-width:700px){
-  .bottom-nav{display:grid !important;}
-  .tabs{display:none;}
-  .group-panels,.tirage-grid,.admin-grid,.swap-grid,.dash-grid{grid-template-columns:1fr !important;}
-  .kpi-bar{grid-template-columns:repeat(2,1fr);}
-  .db-stats-bar{grid-template-columns:repeat(2,1fr);}
-  .cotis-row{flex-wrap:wrap;}
-  .modal-overlay{align-items:flex-end;}
-}
-/* v2026-05-28 — Layout desktop fix */
-@media(min-width:701px){
-  .bottom-nav{display:none !important;}
-  .nav-select-wrap{display:none !important;}
 
-  header{ padding:20px 32px 16px !important;text-align:left; }
-  h1{ font-size:32px !important; }
-  .stats{ grid-template-columns:repeat(5,1fr) !important; }
-  .container{ padding:20px 28px 40px !important;overflow:visible !important;width:100% !important;box-sizing:border-box !important; }
-  .tab-panel{ width:100% !important;box-sizing:border-box !important;overflow:visible !important; }
-  #mb-panel-fiches{ width:100% !important;min-height:100px;overflow:visible !important; }
-  #db-cards{ width:100% !important;overflow:visible !important; }
-  #cotis-grid{ max-height:60vh !important; }
-  .dash-grid{ grid-template-columns:1fr 1fr !important; }
+/* MOBILE (par défaut, < 768px) — tout en pleine largeur */
+.container { width: 100%; max-width: 100%; margin: 0; padding: 0 0 110px; box-sizing: border-box; }
+.tab-panel { width: 100%; box-sizing: border-box; padding: 14px; }
+.tabs { display: none; }
+.bottom-nav { display: grid; }
+.nav-select-wrap { display: none; }
+
+/* Grilles en colonne unique sur mobile */
+@media (max-width: 767px) {
+  .group-panels, .tirage-grid, .admin-grid, .swap-grid, .dash-grid {
+    grid-template-columns: 1fr;
+  }
+  .stats { grid-template-columns: repeat(3, 1fr); }
+  .kpi-row, .kpi-bar, .db-stats-bar { grid-template-columns: repeat(2, 1fr); }
+  .stat-val { font-size: 16px; }
+  .cotis-row { flex-wrap: wrap; }
+  .modal-overlay { align-items: flex-end; }
 }
 
-@media(max-width:380px){
-  .bottom-nav{grid-template-columns:repeat(5,1fr);}
-  .bn-label{font-size:7px;}
-  .bn-icon{font-size:18px;}
+/* Très petits écrans (< 380px) */
+@media (max-width: 380px) {
+  .bottom-nav { grid-template-columns: repeat(5, 1fr); }
+  .bn-label { font-size: 7px; }
+  .bn-icon { font-size: 18px; }
+  .tab-panel { padding: 10px; }
 }
+
+/* TABLETTE & DESKTOP (≥ 768px) — contenu centré, navigation par onglets */
+@media (min-width: 768px) {
+  .bottom-nav { display: none; }
+  .nav-select-wrap { display: none; }
+  .tabs { display: flex; }
+
+  /* Tout le contenu centré dans une colonne confortable */
+  header, .stats, #cfg-bar, .tabs, .container, #session-bar {
+    max-width: 1000px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  header { padding: 24px 32px 18px; text-align: left; }
+  h1 { font-size: 34px; }
+  .stats { grid-template-columns: repeat(5, 1fr); }
+  .container { padding: 24px 32px 60px; }
+  .dash-grid { grid-template-columns: 1fr 1fr; }
+  #cotis-grid { max-height: 60vh; }
+}
+
+/* GRAND DESKTOP (≥ 1280px) — colonne un peu plus large */
+@media (min-width: 1280px) {
+  header, .stats, #cfg-bar, .tabs, .container, #session-bar {
+    max-width: 1140px;
+  }
+}
+
+@media print {
+  .bottom-nav, .tabs, #cfg-bar, #session-bar, .search-fab { display: none !important; }
+}
+
 
 </style>
 </head>
@@ -1939,9 +1960,9 @@ select{
 </div>
 
 <!-- ══════════════════════ MAIN APP ══════════════════════ -->
-<div id="main-app" style="display:block;overflow:visible;">
-<div style="width:100%;background:var(--bg);overflow:visible;">
-<div class="container" style="width:100%;box-sizing:border-box;padding:0 0 120px;overflow:visible;">
+<div id="main-app" style="display:block">
+<div style="width:100%;background:var(--bg);">
+<div class="container">
 
   <header>
     <div class="logo-tag">🏦 Tontine Officielle · Canada</div>
@@ -2195,7 +2216,7 @@ select{
 
   </div><!-- /tab-home -->
 
-  <div class="tab-panel" id="tab-membres" style="display:none;width:100%;box-sizing:border-box;padding:12px;overflow:visible;height:auto;">
+  <div class="tab-panel" id="tab-membres" style="display:none">
     <div id="membres-locked" class="locked-overlay" style="display:none">
       <div class="locked-icon">🔒</div>
       <div class="locked-text">Gestion des membres réservée aux administrateurs et au propriétaire.</div>
@@ -5819,21 +5840,11 @@ function deleteMemberDB(id) {
 }
 
 function renderDB() {
-  // Forcer l'affichage et la hauteur du panel fiches
-  var fichesPanel = document.getElementById('mb-panel-fiches');
-  if (fichesPanel) {
-    fichesPanel.style.setProperty('display','block','important');
-    fichesPanel.style.minHeight = '200px';
-    fichesPanel.style.height = 'auto';
-    fichesPanel.style.position = 'relative';
-  }
+  const fichesPanel = document.getElementById('mb-panel-fiches');
+  if (fichesPanel) fichesPanel.style.display = 'block';
 
   const box = document.getElementById('db-cards');
   if (!box) return;
-  box.style.minHeight = '400px';
-  box.style.height = 'auto';
-  box.style.overflow = 'visible';
-  box.style.display = 'block';
 
   // Bannière Interac manquant
   const interacStatus = getInteracStatus();
