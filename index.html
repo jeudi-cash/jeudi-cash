@@ -8696,15 +8696,19 @@ function buildCotisWeek() {
   const weekDate = benef ? benef.date :
     thursday.toLocaleDateString('fr-CA',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
-  // Même semaine ET weekNum correct → garder les paiements
-  if (cotisWeek && cotisWeek.weekKey === weekKey && cotisWeek.weekNum === weekNum && weekNum > 0) return;
+  // Même semaine (par weekNum) → garder tel quel
+  if (cotisWeek && cotisWeek.weekNum === weekNum && weekNum > 0 &&
+      Array.isArray(cotisWeek.membersState) && cotisWeek.membersState.length) {
+    return;
+  }
 
   // Exclure le bénéficiaire et sa famille
   const exclus = benef ? getFamille(benef.name).membres.map(n=>n.trim()) : [];
 
-  // Garder les paiements existants si même semaine
+  // Garder TOUS les paiements existants (par nom), peu importe la weekKey,
+  // tant que c'est la même semaine numérotée
   const oldPaid = {};
-  if (cotisWeek && cotisWeek.weekKey === weekKey) {
+  if (cotisWeek && cotisWeek.weekNum === weekNum) {
     (cotisWeek.membersState||[]).forEach(m => {
       if (m.paid) oldPaid[m.name] = { paid: true, paidAt: m.paidAt };
     });
