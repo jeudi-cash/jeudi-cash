@@ -1692,29 +1692,65 @@ select{
     <div class="login-logo">JEUDI<br>CASH</div>
     <div class="login-subtitle">🏦 Tontine Officielle · Accès sécurisé</div>
 
-    <!-- 5 rôles -->
-    <div class="login-roles" style="grid-template-columns:repeat(3,1fr);gap:6px">
-      <button class="role-btn owner-btn"     onclick="selectRole('owner')"     >👑 Propriétaire</button>
-      <button class="role-btn admin-btn"     onclick="selectRole('admin')"     >🔧 Admin</button>
-      <button class="role-btn tresorier-btn" onclick="selectRole('tresorier')" >💰 Trésorier</button>
-      <button class="role-btn visitor-btn"   onclick="selectRole('visitor')"   >👁️ Visiteur</button>
-      <button class="role-btn membre-btn"    onclick="selectRole('membre')"    style="grid-column:span 2">👤 Membre</button>
+    <!-- Sélecteur de mode -->
+    <div style="display:flex;gap:4px;background:var(--dark4);border-radius:10px;padding:4px;margin-bottom:16px">
+      <button class="tab active" id="auth-mode-login" onclick="setAuthMode('login')" style="flex:1;font-size:12px">🔑 Connexion</button>
+      <button class="tab" id="auth-mode-signup" onclick="setAuthMode('signup')" style="flex:1;font-size:12px">📝 Inscription</button>
     </div>
 
-    <!-- Champ nom membre (visible seulement pour "Membre") -->
-    <div id="login-membre-name-wrap" style="display:none;margin-bottom:10px">
-      <select id="login-membre-name" class="db-filter" style="width:100%;font-size:14px;padding:10px 12px">
-        <option value="">— Choisir ton nom —</option>
-      </select>
+    <!-- ── FORMULAIRE EMAIL/MOT DE PASSE ── -->
+    <div id="auth-email-form">
+      <div class="login-field" style="margin-bottom:10px">
+        <input type="email" id="auth-email" placeholder="Ton adresse email…" autocomplete="email"
+          style="width:100%;padding:12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-size:14px">
+      </div>
+
+      <!-- Nom (inscription seulement) -->
+      <div id="auth-name-wrap" style="display:none;margin-bottom:10px">
+        <select id="auth-name-select" style="width:100%;padding:12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-size:14px">
+          <option value="">— Choisir ton nom dans la tontine —</option>
+        </select>
+      </div>
+
+      <div class="login-field">
+        <input type="password" id="auth-pw" placeholder="Mot de passe…" autocomplete="current-password"
+          onkeydown="if(event.key==='Enter')doEmailAuth()">
+        <button class="eye-btn" onclick="toggleEye('auth-pw',this)">👁️</button>
+      </div>
+
+      <div class="login-error" id="auth-error"></div>
+
+      <button class="login-btn" onclick="doEmailAuth()" id="auth-submit-btn">🔓 SE CONNECTER</button>
+
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="resetPassword()" style="background:none;border:none;color:var(--gold);font-size:12px;cursor:pointer;text-decoration:underline">
+          Mot de passe oublié ?
+        </button>
+      </div>
     </div>
 
-    <div class="login-field">
-      <input type="password" id="login-pw" placeholder="Mot de passe…" onkeydown="if(event.key==='Enter')doLogin()">
-      <button class="eye-btn" onclick="toggleEye('login-pw',this)">👁️</button>
+    <!-- ── ACCÈS ADMIN (rôles, masqué par défaut) ── -->
+    <div style="text-align:center;margin-top:16px;padding-top:16px;border-top:1px solid var(--b1)">
+      <button onclick="toggleAdminLogin()" style="background:none;border:none;color:var(--t3);font-size:11px;cursor:pointer">
+        👑 Accès administrateur
+      </button>
     </div>
-    <div class="login-error" id="login-error"></div>
-    <button class="login-btn" onclick="doLogin()">🔓 CONNEXION</button>
-    <div class="login-hint">Sélectionne ton rôle puis entre ton mot de passe.<br>Contacte le propriétaire si tu as oublié.</div>
+
+    <div id="admin-login-section" style="display:none;margin-top:12px">
+      <div class="login-roles" style="grid-template-columns:repeat(2,1fr);gap:6px">
+        <button class="role-btn owner-btn"     onclick="selectRole('owner')"     >👑 Propriétaire</button>
+        <button class="role-btn admin-btn"     onclick="selectRole('admin')"     >🔧 Admin</button>
+        <button class="role-btn tresorier-btn" onclick="selectRole('tresorier')" >💰 Trésorier</button>
+        <button class="role-btn visitor-btn"   onclick="selectRole('visitor')"   >👁️ Visiteur</button>
+      </div>
+      <div class="login-field" style="margin-top:10px">
+        <input type="password" id="login-pw" placeholder="Mot de passe admin…" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="eye-btn" onclick="toggleEye('login-pw',this)">👁️</button>
+      </div>
+      <div class="login-error" id="login-error"></div>
+      <button class="login-btn" onclick="doLogin()" style="margin-top:8px">🔓 CONNEXION ADMIN</button>
+      <div id="login-membre-name-wrap" style="display:none"></div>
+    </div>
   </div>
 </div>
 
@@ -6842,26 +6878,194 @@ function lancerConfettis() {
 }
 
 // Login/logout
+
+// ═══════════════════════════════════════
+//  AUTHENTIFICATION EMAIL / MOT DE PASSE
+// ═══════════════════════════════════════
+
+let authMode = 'login'; // 'login' | 'signup'
+
+function setAuthMode(mode) {
+  authMode = mode;
+  document.getElementById('auth-mode-login').classList.toggle('active', mode === 'login');
+  document.getElementById('auth-mode-signup').classList.toggle('active', mode === 'signup');
+
+  const nameWrap = document.getElementById('auth-name-wrap');
+  const submitBtn = document.getElementById('auth-submit-btn');
+  const pwInput = document.getElementById('auth-pw');
+
+  if (mode === 'signup') {
+    nameWrap.style.display = 'block';
+    submitBtn.textContent = '📝 CRÉER MON COMPTE';
+    if (pwInput) pwInput.setAttribute('autocomplete', 'new-password');
+    remplirNomsAuth();
+  } else {
+    nameWrap.style.display = 'none';
+    submitBtn.textContent = '🔓 SE CONNECTER';
+    if (pwInput) pwInput.setAttribute('autocomplete', 'current-password');
+  }
+  const err = document.getElementById('auth-error');
+  if (err) err.textContent = '';
+}
+
+function remplirNomsAuth() {
+  const sel = document.getElementById('auth-name-select');
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— Choisir ton nom dans la tontine —</option>';
+  const anc  = (Array.isArray(G.anc.members)  ? G.anc.members  : Object.values(G.anc.members||{})).filter(n=>n);
+  const nouv = (Array.isArray(G.nouv.members) ? G.nouv.members : Object.values(G.nouv.members||{})).filter(n=>n);
+  if (anc.length) {
+    const og = document.createElement('optgroup'); og.label = '⭐ Anciens';
+    anc.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
+    sel.appendChild(og);
+  }
+  if (nouv.length) {
+    const og = document.createElement('optgroup'); og.label = '🆕 Nouveaux';
+    nouv.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
+    sel.appendChild(og);
+  }
+}
+
+function showAuthError(msg) {
+  const err = document.getElementById('auth-error');
+  if (err) err.textContent = msg;
+}
+
+function doEmailAuth() {
+  const email = (document.getElementById('auth-email')?.value || '').trim();
+  const pw    = document.getElementById('auth-pw')?.value || '';
+
+  if (!email || !email.includes('@')) { showAuthError('⚠️ Entre une adresse email valide'); return; }
+  if (pw.length < 6) { showAuthError('⚠️ Le mot de passe doit faire au moins 6 caractères'); return; }
+
+  if (typeof firebase === 'undefined' || !firebase.auth) {
+    showAuthError('⚠️ Authentification non disponible. Réessaie.'); return;
+  }
+
+  const submitBtn = document.getElementById('auth-submit-btn');
+  if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Patiente…'; }
+
+  if (authMode === 'signup') {
+    const nom = document.getElementById('auth-name-select')?.value || '';
+    if (!nom) {
+      showAuthError('⚠️ Choisis ton nom dans la liste');
+      if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📝 CRÉER MON COMPTE'; }
+      return;
+    }
+    firebase.auth().createUserWithEmailAndPassword(email, pw)
+      .then(function(cred) {
+        // Sauvegarder le lien email ↔ nom membre
+        const uid = cred.user.uid;
+        const profile = { email: email, nom: nom, role: 'membre', createdAt: new Date().toISOString() };
+        if (db) db.ref('jeudi_cash/jc2_users/' + uid).set(profile);
+        currentRole = 'membre';
+        currentMembre = nom;
+        localStorage.setItem('jc2_role', 'membre');
+        localStorage.setItem('jc2_membre', nom);
+        toast('✅ Compte créé ! Bienvenue ' + nom.split(' ')[0]);
+        afterLogin();
+      })
+      .catch(function(err) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📝 CRÉER MON COMPTE'; }
+        if (err.code === 'auth/email-already-in-use') showAuthError('⚠️ Cet email a déjà un compte. Connecte-toi.');
+        else if (err.code === 'auth/weak-password') showAuthError('⚠️ Mot de passe trop faible (min. 6 caractères)');
+        else if (err.code === 'auth/invalid-email') showAuthError('⚠️ Email invalide');
+        else showAuthError('⚠️ ' + err.message);
+      });
+  } else {
+    firebase.auth().signInWithEmailAndPassword(email, pw)
+      .then(function(cred) {
+        const uid = cred.user.uid;
+        // Récupérer le profil
+        if (db) {
+          db.ref('jeudi_cash/jc2_users/' + uid).once('value').then(function(snap) {
+            const profile = snap.val();
+            if (profile) {
+              currentRole = profile.role || 'membre';
+              currentMembre = profile.nom || '';
+              localStorage.setItem('jc2_role', currentRole);
+              localStorage.setItem('jc2_membre', currentMembre);
+            } else {
+              currentRole = 'membre';
+            }
+            toast('✅ Connexion réussie');
+            afterLogin();
+          });
+        } else {
+          currentRole = 'membre';
+          afterLogin();
+        }
+      })
+      .catch(function(err) {
+        if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '🔓 SE CONNECTER'; }
+        if (err.code === 'auth/user-not-found') showAuthError('⚠️ Aucun compte avec cet email. Inscris-toi.');
+        else if (err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') showAuthError('⚠️ Email ou mot de passe incorrect');
+        else if (err.code === 'auth/invalid-email') showAuthError('⚠️ Email invalide');
+        else if (err.code === 'auth/too-many-requests') showAuthError('⚠️ Trop de tentatives. Réessaie plus tard.');
+        else showAuthError('⚠️ ' + err.message);
+      });
+  }
+}
+
+function resetPassword() {
+  const email = (document.getElementById('auth-email')?.value || '').trim();
+  if (!email || !email.includes('@')) { showAuthError('⚠️ Entre ton email d\'abord, puis clique sur « Mot de passe oublié »'); return; }
+  if (typeof firebase === 'undefined' || !firebase.auth) { showAuthError('⚠️ Service non disponible'); return; }
+
+  firebase.auth().sendPasswordResetEmail(email)
+    .then(function() {
+      showAuthError('');
+      toast('📧 Email de réinitialisation envoyé à ' + email);
+    })
+    .catch(function(err) {
+      if (err.code === 'auth/user-not-found') showAuthError('⚠️ Aucun compte avec cet email');
+      else showAuthError('⚠️ ' + err.message);
+    });
+}
+
+function toggleAdminLogin() {
+  const sec = document.getElementById('admin-login-section');
+  if (sec) sec.style.display = sec.style.display === 'none' ? 'block' : 'none';
+}
+
 function afterLogin() {
   const loginScreen = document.getElementById('login-screen');
   if (loginScreen) loginScreen.style.display = 'none';
   const mainApp = document.getElementById('main-app');
   if (mainApp) mainApp.style.display = 'block';
+  // Sauvegarder la session
+  if (currentRole) localStorage.setItem('jc2_role', currentRole);
+  if (currentMembre) localStorage.setItem('jc2_membre', currentMembre);
+  localStorage.setItem('jc2_role_ts', Date.now().toString());
   const cfgBar = document.getElementById('cfg-bar');
   if (cfgBar) cfgBar.style.display = currentRole === 'owner' ? 'flex' : 'none';
   const ownerOnly = document.querySelectorAll('.owner-only');
   ownerOnly.forEach(el => el.style.display = currentRole === 'owner' ? '' : 'none');
+  applyRolePermissions();
   demarrerApp();
 }
 
 function logout() {
   currentRole = null;
+  currentMembre = null;
   localStorage.removeItem('jc2_role');
   localStorage.removeItem('jc2_role_ts');
+  localStorage.removeItem('jc2_membre');
+  // Déconnexion Firebase (mais garder l'auth anonyme pour la lecture)
+  if (typeof firebase !== 'undefined' && firebase.auth && firebase.auth().currentUser && !firebase.auth().currentUser.isAnonymous) {
+    firebase.auth().signOut().then(function() {
+      firebase.auth().signInAnonymously().catch(function(){});
+    });
+  }
   const loginScreen = document.getElementById('login-screen');
   if (loginScreen) loginScreen.style.display = 'flex';
   const mainApp = document.getElementById('main-app');
   if (mainApp) mainApp.style.display = 'none';
+  // Réinitialiser le formulaire
+  const emailInp = document.getElementById('auth-email');
+  const pwInp = document.getElementById('auth-pw');
+  if (emailInp) emailInp.value = '';
+  if (pwInp) pwInp.value = '';
 }
 
 // Afficher le bénéficiaire dans l'onglet Notifs
@@ -10669,12 +10873,44 @@ self.addEventListener('fetch', e => {
   });
 }
 
-// ── ACCÈS LIBRE (sans mot de passe) ──
-currentRole = 'owner';
-document.getElementById('login-screen').style.display = 'none';
-document.getElementById('session-bar').style.display  = 'none';
-document.getElementById('main-app').style.display     = 'block';
-applyRolePermissions();
+// ── VÉRIFICATION DE SESSION AU DÉMARRAGE ──
+(function() {
+  const savedRole = localStorage.getItem('jc2_role');
+  const savedMembre = localStorage.getItem('jc2_membre');
+
+  // Attendre que Firebase Auth se prononce
+  function decideLogin() {
+    const user = (typeof firebase !== 'undefined' && firebase.auth) ? firebase.auth().currentUser : null;
+    const hasEmailSession = user && !user.isAnonymous;
+
+    if (savedRole && (hasEmailSession || savedRole === 'owner' || savedRole === 'admin' || savedRole === 'tresorier' || savedRole === 'visitor')) {
+      // Session valide → entrer dans l'app
+      currentRole = savedRole;
+      if (savedMembre) currentMembre = savedMembre;
+      document.getElementById('login-screen').style.display = 'none';
+      document.getElementById('main-app').style.display = 'block';
+      applyRolePermissions();
+    } else {
+      // Pas de session → montrer l'écran de connexion
+      document.getElementById('login-screen').style.display = 'flex';
+      document.getElementById('main-app').style.display = 'none';
+      const sb = document.getElementById('session-bar');
+      if (sb) sb.style.display = 'none';
+      setAuthMode('login');
+    }
+  }
+
+  if (typeof firebase !== 'undefined' && firebase.auth) {
+    let decided = false;
+    firebase.auth().onAuthStateChanged(function() {
+      if (!decided) { decided = true; decideLogin(); }
+    });
+    // Sécurité : décider après 2s même si Firebase ne répond pas
+    setTimeout(function() { if (!decided) { decided = true; decideLogin(); } }, 2000);
+  } else {
+    decideLogin();
+  }
+})();
 
 
 // ═══════════════════════════════════════
