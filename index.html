@@ -1707,9 +1707,8 @@ select{
 
       <!-- Nom (inscription seulement) -->
       <div id="auth-name-wrap" style="display:none;margin-bottom:10px">
-        <select id="auth-name-select" style="width:100%;padding:12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-size:14px">
-          <option value="">— Choisir ton nom dans la tontine —</option>
-        </select>
+        <input type="text" id="auth-name-input" placeholder="Ton nom complet…" autocomplete="name"
+          style="width:100%;padding:12px;border-radius:10px;background:var(--s1);border:1px solid var(--b1);color:var(--t1);font-size:14px">
       </div>
 
       <div class="login-field">
@@ -3266,6 +3265,13 @@ const firebaseConfig = {
 
 let db = null;
 let authReady = false;
+
+// ── Email(s) propriétaire avec contrôle total (modifiable) ──
+let OWNER_EMAILS = ['njimbia.francioli@outlook.fr'];
+try {
+  const savedOwners = JSON.parse(localStorage.getItem('jc2_owner_emails') || 'null');
+  if (Array.isArray(savedOwners) && savedOwners.length) OWNER_EMAILS = savedOwners;
+} catch(e) {}
 try {
   if (typeof firebase !== 'undefined') {
     if (!firebase.apps.length) {
@@ -3292,6 +3298,17 @@ try {
           console.log('🔐 Session active:', user.uid.substring(0,8));
         }
       });
+
+      // Charger la liste des propriétaires depuis Firebase
+      if (db) {
+        db.ref('jeudi_cash/jc2_owner_emails').once('value').then(function(snap) {
+          const owners = snap.val();
+          if (Array.isArray(owners) && owners.length) {
+            OWNER_EMAILS = owners;
+            localStorage.setItem('jc2_owner_emails', JSON.stringify(owners));
+          }
+        }).catch(function(){});
+      }
     }
   }
 } catch(e) {
@@ -6885,6 +6902,11 @@ function lancerConfettis() {
 
 let authMode = 'login'; // 'login' | 'signup'
 
+function estProprietaire(email) {
+  if (!email) return false;
+  return OWNER_EMAILS.map(e => e.toLowerCase().trim()).includes(email.toLowerCase().trim());
+}
+
 function setAuthMode(mode) {
   authMode = mode;
   document.getElementById('auth-mode-login').classList.toggle('active', mode === 'login');
@@ -6898,7 +6920,6 @@ function setAuthMode(mode) {
     nameWrap.style.display = 'block';
     submitBtn.textContent = '📝 CRÉER MON COMPTE';
     if (pwInput) pwInput.setAttribute('autocomplete', 'new-password');
-    remplirNomsAuth();
   } else {
     nameWrap.style.display = 'none';
     submitBtn.textContent = '🔓 SE CONNECTER';
@@ -6908,22 +6929,21 @@ function setAuthMode(mode) {
   if (err) err.textContent = '';
 }
 
-function remplirNomsAuth() {
-  const sel = document.getElementById('auth-name-select');
-  if (!sel) return;
-  sel.innerHTML = '<option value="">— Choisir ton nom dans la tontine —</option>';
-  const anc  = (Array.isArray(G.anc.members)  ? G.anc.members  : Object.values(G.anc.members||{})).filter(n=>n);
-  const nouv = (Array.isArray(G.nouv.members) ? G.nouv.members : Object.values(G.nouv.members||{})).filter(n=>n);
-  if (anc.length) {
-    const og = document.createElement('optgroup'); og.label = '⭐ Anciens';
-    anc.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
-    sel.appendChild(og);
-  }
-  if (nouv.length) {
-    const og = document.createElement('optgroup'); og.label = '🆕 Nouveaux';
-    nouv.forEach(n => { const o = document.createElement('option'); o.value = n; o.textContent = n; og.appendChild(o); });
-    sel.appendChild(og);
-  }
+// ── Gérer les emails propriétaires (changer quand tu veux) ──
+function gererProprietaires() {
+  const actuels = OWNER_EMAILS.join(', ');
+  const nouveau = window.prompt(
+    'Emails propriétaires actuels :\n' + actuels + '\n\n' +
+    'Entre la liste complète des emails propriétaires (séparés par des virgules) :',
+    actuels
+  );
+  if (nouveau === null) return;
+  const liste = nouveau.split(',').map(e => e.trim().toLowerCase()).filter(e => e.includes('@'));
+  if (!liste.length) { toast('⚠️ Aucun email valide', true); return; }
+  OWNER_EMAILS = liste;
+  localStorage.setItem('jc2_owner_emails', JSON.stringify(liste));
+  if (db) db.ref('jeudi_cash/jc2_owner_emails').set(liste);
+  toast('✅ Propriétaires mis à jour : ' + liste.join(', '));
 }
 
 function showAuthError(msg) {
@@ -6946,23 +6966,24 @@ function doEmailAuth() {
   if (submitBtn) { submitBtn.disabled = true; submitBtn.textContent = '⏳ Patiente…'; }
 
   if (authMode === 'signup') {
-    const nom = document.getElementById('auth-name-select')?.value || '';
-    if (!nom) {
-      showAuthError('⚠️ Choisis ton nom dans la liste');
+    const nom = (document.getElementById('auth-name-input')?.value || '').trim();
+    if (!nom || nom.length < 2) {
+      showAuthError('⚠️ Entre ton nom complet');
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = '📝 CRÉER MON COMPTE'; }
       return;
     }
     firebase.auth().createUserWithEmailAndPassword(email, pw)
       .then(function(cred) {
-        // Sauvegarder le lien email ↔ nom membre
         const uid = cred.user.uid;
-        const profile = { email: email, nom: nom, role: 'membre', createdAt: new Date().toISOString() };
+        const isOwner = estProprietaire(email);
+        const role = isOwner ? 'owner' : 'membre';
+        const profile = { email: email, nom: nom, role: role, createdAt: new Date().toISOString() };
         if (db) db.ref('jeudi_cash/jc2_users/' + uid).set(profile);
-        currentRole = 'membre';
+        currentRole = role;
         currentMembre = nom;
-        localStorage.setItem('jc2_role', 'membre');
+        localStorage.setItem('jc2_role', role);
         localStorage.setItem('jc2_membre', nom);
-        toast('✅ Compte créé ! Bienvenue ' + nom.split(' ')[0]);
+        toast(isOwner ? '👑 Bienvenue propriétaire ' + nom.split(' ')[0] + ' !' : '✅ Compte créé ! Bienvenue ' + nom.split(' ')[0]);
         afterLogin();
       })
       .catch(function(err) {
@@ -6976,23 +6997,29 @@ function doEmailAuth() {
     firebase.auth().signInWithEmailAndPassword(email, pw)
       .then(function(cred) {
         const uid = cred.user.uid;
+        const isOwner = estProprietaire(email);
         // Récupérer le profil
         if (db) {
           db.ref('jeudi_cash/jc2_users/' + uid).once('value').then(function(snap) {
             const profile = snap.val();
-            if (profile) {
+            if (isOwner) {
+              currentRole = 'owner';
+              currentMembre = profile?.nom || 'Propriétaire';
+              // Mettre à jour le rôle dans Firebase si besoin
+              if (db) db.ref('jeudi_cash/jc2_users/' + uid + '/role').set('owner');
+            } else if (profile) {
               currentRole = profile.role || 'membre';
               currentMembre = profile.nom || '';
-              localStorage.setItem('jc2_role', currentRole);
-              localStorage.setItem('jc2_membre', currentMembre);
             } else {
               currentRole = 'membre';
             }
-            toast('✅ Connexion réussie');
+            localStorage.setItem('jc2_role', currentRole);
+            localStorage.setItem('jc2_membre', currentMembre);
+            toast(isOwner ? '👑 Bienvenue propriétaire !' : '✅ Connexion réussie');
             afterLogin();
           });
         } else {
-          currentRole = 'membre';
+          currentRole = isOwner ? 'owner' : 'membre';
           afterLogin();
         }
       })
