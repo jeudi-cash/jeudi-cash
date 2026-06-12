@@ -8763,6 +8763,8 @@ function toggleCotis(idx, groupe) {
 
   // Enregistrer dans l'historique des scores
   recordPayment(m.name, m.groupe, m.paid, cotisWeek.weekNum || 0);
+
+  // Re-render (renderTracabilite ne reconstruit plus cotisWeek)
   renderTracabilite();
   generateResumeMsg();
 
@@ -8870,7 +8872,10 @@ function renderTracabilite() {
     if (!active) switchTracTab('semaine');
   }
 
-  buildCotisWeek();
+  // Ne reconstruire que si cotisWeek n'existe pas (préserve les paiements)
+  if (!cotisWeek || !Array.isArray(cotisWeek.membersState) || !cotisWeek.membersState.length) {
+    buildCotisWeek();
+  }
   updateLateCount();
   renderBenefSuivi();
   const benef   = getCurrentWeekBenef();
