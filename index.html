@@ -8735,25 +8735,8 @@ function toggleCotis(idx, groupe) {
   m.paid   = !m.paid;
   m.paidAt = m.paid ? new Date().toLocaleString('fr-CA') : null;
 
-  // ── Audit trail ──
-  addAudit('Paiement', `${m.name} — Sem. #${String(cotisWeek.weekNum||0).padStart(3,'0')}`,
-    { paid: !m.paid }, { paid: m.paid, paidAt: m.paidAt });
-
-  // ── Confirmation WA automatique ──
-  if (m.paid) envoyerConfirmationPaiement(m.name, m.groupe);
-
-  // ── Animation feedback ──
-  const toggleEl = document.querySelector(`[onclick="toggleCotis(${idx},'${groupe}')"]`);
-  if (toggleEl) feedbackPaiement(toggleEl, m.paid);
-
-  // ── Vérifier si tout le monde a payé ──
-  const allPaid = cotisWeek.membersState.every(x => x.paid);
-  if (allPaid && m.paid) setTimeout(() => explosionTousPayes(), 300);
-
-  // Sauvegarder localStorage immédiatement
+  // ── SAUVEGARDE EN PREMIER (priorité absolue) ──
   try { localStorage.setItem('jc2_cotis_week', JSON.stringify(cotisWeek)); } catch(e) {}
-
-  // Sync Firebase immédiatement (pas via ls() qui a un debounce)
   if (db) {
     window._pauseListener?.();
     db.ref('jeudi_cash/jc2_cotis_week').set(cotisWeek)
@@ -8761,22 +8744,40 @@ function toggleCotis(idx, groupe) {
       .catch(() => { setSyncStatus('error'); window._resumeListener?.(); });
   }
 
-  // Enregistrer dans l'historique des scores
-  recordPayment(m.name, m.groupe, m.paid, cotisWeek.weekNum || 0);
+  // ── Effets secondaires (protégés, n'annulent jamais la sauvegarde) ──
+  try {
+    addAudit('Paiement', `${m.name} — Sem. #${String(cotisWeek.weekNum||0).padStart(3,'0')}`,
+      { paid: !m.paid }, { paid: m.paid, paidAt: m.paidAt });
+  } catch(e) { console.warn('addAudit:', e); }
 
-  // Re-render (renderTracabilite ne reconstruit plus cotisWeek)
-  renderTracabilite();
-  generateResumeMsg();
+  try { if (m.paid) envoyerConfirmationPaiement(m.name, m.groupe); } catch(e) { console.warn('confirmation:', e); }
 
-  // ── Indicateur visuel "message mis à jour" ──
-  const paid2   = cotisWeek.membersState.filter(x=>x.paid).length;
-  const total2  = cotisWeek.membersState.length;
-  const msgBadge = document.getElementById('msg-update-badge');
-  if (msgBadge) {
-    msgBadge.textContent = `✅ Message mis à jour — ${paid2}/${total2} payés`;
-    msgBadge.style.opacity = '1';
-    setTimeout(() => { msgBadge.style.opacity = '0'; }, 2500);
-  }
+  try {
+    const toggleEl = document.querySelector(`[onclick="toggleCotis(${idx},'${groupe}')"]`);
+    if (toggleEl) feedbackPaiement(toggleEl, m.paid);
+  } catch(e) {}
+
+  try {
+    const allPaid = cotisWeek.membersState.every(x => x.paid);
+    if (allPaid && m.paid) setTimeout(() => explosionTousPayes(), 300);
+  } catch(e) {}
+
+  try { recordPayment(m.name, m.groupe, m.paid, cotisWeek.weekNum || 0); } catch(e) { console.warn('recordPayment:', e); }
+
+  try { renderTracabilite(); } catch(e) { console.warn('render:', e); }
+  try { generateResumeMsg(); } catch(e) {}
+
+  // Badge mise à jour
+  try {
+    const paid2  = cotisWeek.membersState.filter(x=>x.paid).length;
+    const total2 = cotisWeek.membersState.length;
+    const msgBadge = document.getElementById('msg-update-badge');
+    if (msgBadge) {
+      msgBadge.textContent = `✅ Message mis à jour — ${paid2}/${total2} payés`;
+      msgBadge.style.opacity = '1';
+      setTimeout(() => { msgBadge.style.opacity = '0'; }, 2500);
+    }
+  } catch(e) {}
 }
 
 function markAllPaid() {
