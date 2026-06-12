@@ -35,6 +35,7 @@
 
 <!-- Firebase SDK -->
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js"></script>
 
 <script>
@@ -3228,6 +3229,7 @@ const firebaseConfig = {
 };
 
 let db = null;
+let authReady = false;
 try {
   if (typeof firebase !== 'undefined') {
     if (!firebase.apps.length) {
@@ -3235,6 +3237,26 @@ try {
     }
     db = firebase.database();
     console.log('✅ Firebase connecté');
+
+    // ── Authentification anonyme (sécurité) ──
+    if (firebase.auth) {
+      firebase.auth().signInAnonymously()
+        .then(function() {
+          authReady = true;
+          console.log('🔐 Authentifié auprès de Firebase');
+        })
+        .catch(function(err) {
+          console.warn('⚠️ Auth anonyme échouée:', err.code, err.message);
+          // L'app continue de fonctionner avec localStorage
+        });
+
+      firebase.auth().onAuthStateChanged(function(user) {
+        if (user) {
+          authReady = true;
+          console.log('🔐 Session active:', user.uid.substring(0,8));
+        }
+      });
+    }
   }
 } catch(e) {
   console.warn('⚠️ Firebase init failed:', e);
@@ -10591,6 +10613,7 @@ const ASSETS = [
   '/jeudi-cash/index.html',
   'https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Space+Grotesk:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap',
   'https://www.gstatic.com/firebasejs/9.6.1/firebase-app-compat.js',
+  'https://www.gstatic.com/firebasejs/9.6.1/firebase-auth-compat.js',
   'https://www.gstatic.com/firebasejs/9.6.1/firebase-database-compat.js'
 ];
 
