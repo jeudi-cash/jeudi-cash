@@ -8697,6 +8697,8 @@ function isCollectionOpen() {
 }
 
 function buildCotisWeek() {
+  const _avant = cotisWeek?.membersState?.filter(m=>m.paid).length || 0;
+  console.log('🔨 buildCotisWeek | payés avant:', _avant, '| weekNum actuel:', cotisWeek?.weekNum);
   const { monday, thursday } = getCurrentWeekBounds();
   const weekKey  = monday.toISOString().split('T')[0];
   const benef    = getCurrentWeekBenef();
