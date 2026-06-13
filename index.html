@@ -4452,8 +4452,16 @@ function loadFromFirebase() {
     const data = snap.val() || {};
     _applyFirebaseData(data);
     _cacheToLocal();
-    cotisWeek = null; // Forcer reconstruction avec le vrai schedule
-    buildCotisWeek();
+    // Charger cotisWeek depuis Firebase (préserve les paiements)
+    if (data.jc2_cotis_week && data.jc2_cotis_week.membersState) {
+      cotisWeek = data.jc2_cotis_week;
+    }
+    // Ne reconstruire QUE si absent ou mauvaise semaine
+    const curBenef = getCurrentWeekBenef();
+    const curWeekNum = curBenef ? curBenef.week : 0;
+    if (!cotisWeek || !cotisWeek.membersState || !cotisWeek.membersState.length || cotisWeek.weekNum !== curWeekNum) {
+      buildCotisWeek();
+    }
     showLoader(false);
     init();
     setupTargetedListeners();
