@@ -9639,9 +9639,7 @@ function renderDashboard() {
   const total    = ancTotal + nouvTotal;
   const ancDone  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{})).length;
   const nouvDone = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{})).length;
-  const done     = ancDone + nouvDone;
-  const remaining= total - done;
-  const pct      = total > 0 ? Math.round((done/total)*100) : 0;
+  const tiragesFaits = ancDone + nouvDone;   // ordre tiré (peut être 35/35)
   const potSem   = total > 1 ? (total - 1) * COTISATION : total * COTISATION;
 
   // ── CALCULS FINANCIERS ──
@@ -9676,16 +9674,20 @@ function renderDashboard() {
     return d && d > todayMid;
   });
 
+  // ── PROGRESSION RÉELLE = semaines écoulées / total des semaines ──
+  // (et NON le nombre de membres tirés, qui est toujours 35/35)
+  const totalSemaines = allSched.length || total;
+  const done      = semPassees.length;           // semaines réellement distribuées
+  const remaining = Math.max(0, totalSemaines - done);
+  const pct       = totalSemaines > 0 ? Math.round((done/totalSemaines)*100) : 0;
+
   // ── Total réellement distribué = somme des pots confirmés ──
   // Utilise l'historique des confirmations (source de vérité)
   const totalRecu     = receptionsHist.reduce((sum, r) => sum + (r.montantRecu || 0), 0);
   const nbConfirmes   = receptionsHist.length;
 
-  // Total théorique distribué = somme des pots de chaque semaine passée
-  // (calculé avec le bon nombre de cotisants par bénéficiaire)
-  const totalDistribue = semPassees.reduce((sum, s) => {
-    return sum + potDuBenef(s.name);
-  }, 0);
+  // Total réellement distribué = somme des montants confirmés (même source que Total reçu)
+  const totalDistribue = totalRecu;
 
   // Total attendu en cotisations jusqu'à aujourd'hui
   // = somme des cotisations de chaque semaine passée
@@ -9706,10 +9708,8 @@ function renderDashboard() {
     return sum + potDuBenef(s.name);
   }, 0);
 
-  // Encore à distribuer = pots des semaines futures
-  const encoreADistribuer = semFutures.reduce((sum, s) => {
-    return sum + potDuBenef(s.name);
-  }, 0);
+  // Encore à distribuer = total du cycle − déjà distribué (cohérent)
+  const encoreADistribuer = Math.max(0, totalAttenduCycle - totalDistribue);
 
   // Cashflow semaine en cours
   const allM     = cotisWeek ? cotisWeek.membersState : [];
@@ -9735,7 +9735,7 @@ function renderDashboard() {
   upd('fin-total-retard', totalEnRetard>0 ? fmt(totalEnRetard) : '✅ 0');
   upd('fin-total-retard-sub', totalEnRetard>0 ? `Sur ${fmt(totalAttendu)} attendus` : 'Aucun retard détecté');
   upd('fin-recuperable', fmt(montantRecuperable));
-  upd('fin-recuperable-sub', `${semFutures.length} sem. restantes × ${fmt(potSem)}`);
+  upd('fin-recuperable-sub', `${semFutures.length} semaine${semFutures.length>1?'s':''} restante${semFutures.length>1?'s':''}`);
 
   // KPI membres
   upd('kpi-total', total);
@@ -9743,7 +9743,7 @@ function renderDashboard() {
   upd('kpi-pot', potSem > 0 ? potSem.toLocaleString('fr-CA') : '0');
   updHTML('kpi-pot-sub', `<span style="color:var(--t3)">${DEVISE}</span>`);
   upd('kpi-done', pct + '%');
-  updHTML('kpi-done-sub', `<span style="color:var(--t3)">${done}/${total} tirages</span>`);
+  updHTML('kpi-done-sub', `<span style="color:var(--t3)">${done}/${totalSemaines} semaines</span>`);
   upd('kpi-restant', remaining);
 
   // Cashflow
@@ -9765,7 +9765,7 @@ function renderDashboard() {
   upd('proj-distribue', totalDistribue > 0 ? fmt(totalDistribue) : '—');
   upd('proj-restant', fmt(encoreADistribuer));
   upd('proj-recuperable', fmt(montantRecuperable));
-  upd('proj-recuperable-sub', `${semFutures.length} semaines × ${total} membres × ${COTISATION} ${DEVISE}`);
+  upd('proj-recuperable-sub', `${semFutures.length} semaine${semFutures.length>1?'s':''} restante${semFutures.length>1?'s':''} à collecter`);
 
   // Ring
   const circumference = 2 * Math.PI * 40;
@@ -9785,9 +9785,16 @@ function renderDashboard() {
 
   // ── GRAPHIQUE 1 — Pots distribués par semaine (barres) ──
   setTimeout(() => {
-    const allSchedFin = [...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{})),
-                        ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))]
-                       .filter(s=>s.name).sort((a,b)=>a.week-b.week).slice(0, 12);
+    const _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
+    const _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
+    const _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
+    const _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
+    const allSchedFin = [
+      ...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}))
+         .map((s,i)=>({...s, name: s.name || _aMem[Number(_aDr[i])], week: s.week||(i+1)})),
+      ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))
+         .map((s,i)=>({...s, name: s.name || _nMem[Number(_nDr[i])], week: s.week||(_aMem.filter(n=>n).length+i+1)}))
+    ].filter(s=>s.name).sort((a,b)=>a.week-b.week).slice(0, 12);
     const finData = allSchedFin.map(s => ({
       label: `#${s.week} ${s.name?.split(' ')[0]||''}`,
       value: potDuBenef(s.name),
@@ -9871,9 +9878,15 @@ function renderDashboard() {
   // Timeline prochains bénéficiaires
   const timeline = document.getElementById('next-benef-timeline');
   if(timeline){
+    const _ancMem  = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
+    const _nouvMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
+    const _ancDr   = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
+    const _nouvDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
     const allSc = [
-      ...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{})).map(s=>({...s,groupe:'anc'})),
-      ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{})).map(s=>({...s,groupe:'nouv'}))
+      ...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}))
+         .map((s,i)=>({...s, groupe:'anc',  name: s.name || _ancMem[Number(_ancDr[i])], week: s.week||(i+1)})),
+      ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))
+         .map((s,i)=>({...s, groupe:'nouv', name: s.name || _nouvMem[Number(_nouvDr[i])], week: s.week||(_ancMem.filter(n=>n).length+i+1)}))
     ].filter(s=>s.name).sort((a,b)=>a.week-b.week);
 
     const { monday, sunday } = getCurrentWeekBounds();
