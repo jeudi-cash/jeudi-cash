@@ -3301,6 +3301,9 @@ try {
     db = firebase.database();
     console.log('✅ Firebase connecté');
 
+    // Garder le nœud principal en cache local (meilleure fiabilité mobile/hors-ligne)
+    try { db.ref('jeudi_cash').keepSynced(true); } catch(e) {}
+
     // ── Authentification anonyme (sécurité) ──
     if (firebase.auth) {
       firebase.auth().signInAnonymously()
@@ -4671,6 +4674,92 @@ function setupTargetedListeners() {
     startDate = val;
     scheduleRender(() => { renderCalendar(); }, 200);
   });
+
+  // Activer la fiabilité mobile une seule fois
+  setupMobileSyncReliability();
+}
+
+// ═══════════════════════════════════════
+//  FIABILITÉ DE LA SYNCHRONISATION MOBILE
+// ═══════════════════════════════════════
+let _mobileSyncSetup = false;
+let _lastResyncTime = 0;
+
+function resyncMaintenant(raison) {
+  if (!db) return;
+  // Éviter les resync trop rapprochées (max 1 toutes les 3s)
+  const now = Date.now();
+  if (now - _lastResyncTime < 3000) return;
+  _lastResyncTime = now;
+
+  setSyncStatus('loading');
+  db.ref('jeudi_cash').once('value')
+    .then(snap => {
+      const data = snap.val();
+      if (data) {
+        _applyFirebaseData(data);
+        _cacheToLocal();
+        // Préserver les paiements en cours : charger cotisWeek depuis Firebase
+        if (data.jc2_cotis_week && data.jc2_cotis_week.membersState && data.jc2_cotis_week.membersState.length) {
+          cotisWeek = data.jc2_cotis_week;
+        }
+        // Re-render l'onglet actif
+        try { renderHome(); } catch(e){}
+        try { if (_currentTab === 'tracabilite') renderTracabilite(); } catch(e){}
+        try { if (_currentTab === 'calendrier') renderCalendar(); } catch(e){}
+        try { if (_currentTab === 'membres') renderDB(); } catch(e){}
+      }
+      setSyncStatus('saved');
+    })
+    .catch(() => setSyncStatus('error'));
+}
+
+function setupMobileSyncReliability() {
+  if (_mobileSyncSetup) return;
+  _mobileSyncSetup = true;
+
+  // 1. Retour sur l'app (changement d'onglet, déverrouillage téléphone)
+  document.addEventListener('visibilitychange', function() {
+    if (document.visibilityState === 'visible') {
+      resyncMaintenant('retour-app');
+    }
+  });
+
+  // 2. Focus de la fenêtre (revenir sur l'onglet navigateur)
+  window.addEventListener('focus', function() {
+    resyncMaintenant('focus');
+  });
+
+  // 3. Reconnexion réseau (wifi/données reviennent)
+  window.addEventListener('online', function() {
+    setSyncStatus('loading');
+    toast('📶 Connexion rétablie — synchronisation…');
+    setTimeout(() => resyncMaintenant('online'), 500);
+  });
+
+  // 4. Perte réseau (informer l'utilisateur)
+  window.addEventListener('offline', function() {
+    setSyncStatus('error');
+    toast('📵 Hors ligne — les données seront synchronisées au retour', true);
+  });
+
+  // 5. Surveiller l'état de connexion Firebase en temps réel
+  if (db) {
+    db.ref('.info/connected').on('value', function(snap) {
+      const connected = snap.val();
+      if (connected === true) {
+        // Reconnexion Firebase → resync
+        setTimeout(() => resyncMaintenant('firebase-reconnect'), 800);
+      }
+    });
+  }
+
+  // 6. Resync périodique de sécurité (toutes les 60s si l'app est visible)
+  setInterval(function() {
+    if (document.visibilityState === 'visible' && navigator.onLine) {
+      resyncMaintenant('periodique');
+    }
+  }, 60000);
 }
 
 function showLoader(show) {
