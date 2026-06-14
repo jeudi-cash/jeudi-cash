@@ -8697,8 +8697,6 @@ function isCollectionOpen() {
 }
 
 function buildCotisWeek() {
-  const _avant = cotisWeek?.membersState?.filter(m=>m.paid).length || 0;
-  console.log('🔨 buildCotisWeek | payés avant:', _avant, '| weekNum actuel:', cotisWeek?.weekNum);
   const { monday, thursday } = getCurrentWeekBounds();
   const weekKey  = monday.toISOString().split('T')[0];
   const benef    = getCurrentWeekBenef();
@@ -8706,7 +8704,17 @@ function buildCotisWeek() {
   const weekDate = benef ? benef.date :
     thursday.toLocaleDateString('fr-CA',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
-  // Même semaine (par weekNum) → garder tel quel
+  // Si cotisWeek absent en mémoire, essayer de le récupérer depuis localStorage
+  if (!cotisWeek || !cotisWeek.membersState || !cotisWeek.membersState.length) {
+    try {
+      const saved = JSON.parse(localStorage.getItem('jc2_cotis_week') || 'null');
+      if (saved && saved.membersState && saved.membersState.length) {
+        cotisWeek = saved;
+      }
+    } catch(e) {}
+  }
+
+  // Même semaine (par weekNum) → garder tel quel (préserve les paiements)
   if (cotisWeek && cotisWeek.weekNum === weekNum && weekNum > 0 &&
       Array.isArray(cotisWeek.membersState) && cotisWeek.membersState.length) {
     return;
@@ -8715,8 +8723,7 @@ function buildCotisWeek() {
   // Exclure le bénéficiaire et sa famille
   const exclus = benef ? getFamille(benef.name).membres.map(n=>n.trim()) : [];
 
-  // Garder TOUS les paiements existants (par nom), peu importe la weekKey,
-  // tant que c'est la même semaine numérotée
+  // Garder TOUS les paiements existants (par nom) si même semaine
   const oldPaid = {};
   if (cotisWeek && cotisWeek.weekNum === weekNum) {
     (cotisWeek.membersState||[]).forEach(m => {
@@ -8734,8 +8741,13 @@ function buildCotisWeek() {
     });
   });
 
-  cotisWeek = { weekKey, weekNum, weekDate, membersState: allMembers, benefExclus: exclus };
-  ls('jc2_cotis_week', cotisWeek);
+  const nouveauCotis = { weekKey, weekNum, weekDate, membersState: allMembers, benefExclus: exclus };
+
+  // buildCotisWeek NE SAUVEGARDE JAMAIS dans Firebase.
+  // Il ne fait que construire la structure en mémoire + localStorage.
+  // Seul toggleCotis écrit dans Firebase (quand un vrai paiement est coché).
+  cotisWeek = nouveauCotis;
+  try { localStorage.setItem('jc2_cotis_week', JSON.stringify(nouveauCotis)); } catch(e) {}
 }
 
 function toggleCotis(idx, groupe) {
@@ -11017,9 +11029,17 @@ function demarrerApp() {
           if (data) {
             _applyFirebaseData(data);
             _cacheToLocal();
-            cotisWeek = null; // Forcer reconstruction
+            // Charger cotisWeek depuis Firebase (préserve les paiements)
+            if (data.jc2_cotis_week && data.jc2_cotis_week.membersState && data.jc2_cotis_week.membersState.length) {
+              cotisWeek = data.jc2_cotis_week;
+            }
           }
-          buildCotisWeek();
+          // Ne reconstruire QUE si absent ou si la semaine a changé
+          const curBenef = getCurrentWeekBenef();
+          const curWeekNum = curBenef ? curBenef.week : 0;
+          if (!cotisWeek || !cotisWeek.membersState || !cotisWeek.membersState.length || cotisWeek.weekNum !== curWeekNum) {
+            buildCotisWeek();
+          }
           renderAll();
           setSyncStatus('saved');
           setupTargetedListeners();
