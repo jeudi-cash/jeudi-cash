@@ -2657,16 +2657,16 @@ select{
           </svg>
           <div style="display:flex;flex-direction:column;gap:8px;">
             <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:12px;height:12px;border-radius:2px;background:var(--ancien);flex-shrink:0"></div>
-              <span style="font-size:12px"><b id="ring-anc-done">0</b> anciens tirés</span>
-            </div>
-            <div style="display:flex;align-items:center;gap:8px">
-              <div style="width:12px;height:12px;border-radius:2px;background:var(--nouveau);flex-shrink:0"></div>
-              <span style="font-size:12px"><b id="ring-nouv-done">0</b> nouveaux tirés</span>
+              <div style="width:12px;height:12px;border-radius:2px;background:var(--gold);flex-shrink:0"></div>
+              <span style="font-size:12px"><b id="ring-anc-done">0</b> <span id="ring-lbl-anc">semaines écoulées</span></span>
             </div>
             <div style="display:flex;align-items:center;gap:8px">
               <div style="width:12px;height:12px;border-radius:2px;background:var(--b1);flex-shrink:0"></div>
-              <span style="font-size:12px"><b id="ring-remaining">0</b> restants</span>
+              <span style="font-size:12px"><b id="ring-nouv-done">0</b> <span id="ring-lbl-nouv">semaines restantes</span></span>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px">
+              <div style="width:12px;height:12px;border-radius:2px;background:var(--t3);flex-shrink:0"></div>
+              <span style="font-size:12px"><b id="ring-remaining">0</b> <span id="ring-lbl-rest">semaines au total</span></span>
             </div>
           </div>
         </div>
@@ -9767,15 +9767,28 @@ function renderDashboard() {
   upd('proj-recuperable', fmt(montantRecuperable));
   upd('proj-recuperable-sub', `${semFutures.length} semaine${semFutures.length>1?'s':''} restante${semFutures.length>1?'s':''} à collecter`);
 
-  // Ring
+  // Ring — progression de la tontine (semaines écoulées)
   const circumference = 2 * Math.PI * 40;
-  const offset = circumference - (pct/100)*circumference;
+  const pctRing = Math.max(2, pct); // minimum visible
+  const offset = circumference - (pctRing/100)*circumference;
   const ringFill = document.getElementById('ring-anc');
-  if(ringFill){ ringFill.style.strokeDashoffset=offset; ringFill.style.strokeDasharray=circumference; }
+  if(ringFill){
+    ringFill.style.strokeDashoffset = offset;
+    ringFill.style.strokeDasharray = circumference;
+    ringFill.style.stroke = pct >= 100 ? 'var(--green)' : 'var(--gold)';
+  }
   upd('ring-pct-text', pct+'%');
-  upd('ring-anc-done', ancDone);
-  upd('ring-nouv-done', nouvDone);
-  upd('ring-remaining', remaining);
+  upd('ring-anc-done', done);
+  upd('ring-nouv-done', remaining);
+  upd('ring-remaining', totalSemaines);
+  // Légendes adaptées à la progression en semaines
+  const lblAnc = document.getElementById('ring-lbl-anc');
+  const lblNouv = document.getElementById('ring-lbl-nouv');
+  const lblRest = document.getElementById('ring-lbl-rest');
+  if(lblAnc)  lblAnc.textContent  = 'semaines écoulées';
+  if(lblNouv) lblNouv.textContent = 'semaines restantes';
+  if(lblRest) lblRest.textContent = 'semaines au total';
+
   const progAncFill = document.getElementById('prog-anc-fill');
   if(progAncFill) progAncFill.style.width=(ancTotal>0?(ancDone/ancTotal)*100:0)+'%';
   upd('prog-anc-lbl', `${ancDone}/${ancTotal}`);
@@ -9810,7 +9823,8 @@ function renderDashboard() {
     const semaines = new Set();
     Object.values(hist).forEach(entries => entries.forEach(e => semaines.add(e.week)));
     const semList = [...semaines].sort((a,b)=>a-b).slice(-8);
-    if (semList.length) {
+    // Il faut au moins 2 semaines de données pour une courbe utile
+    if (semList.length >= 2) {
       const pctData = semList.map(w => {
         const entries = Object.values(hist).map(e => e.find(x=>x.week===w)).filter(Boolean);
         const payes   = entries.filter(e=>e.paid).length;
@@ -9823,7 +9837,7 @@ function renderDashboard() {
       );
     } else {
       const el = document.getElementById('chart-cotisations');
-      if (el) el.innerHTML = `<div class="empty-state" style="padding:20px"><div class="empty-icon">📊</div><p>Coche des cotisations<br>pour voir l'évolution</p></div>`;
+      if (el) el.innerHTML = `<div class="empty-state" style="padding:30px 20px;text-align:center"><div class="empty-icon" style="font-size:28px">📊</div><p style="color:var(--t3);font-size:12px;margin-top:8px">La courbe apparaîtra après<br>quelques semaines de cotisations</p></div>`;
     }
   }, 150);
 
@@ -9836,18 +9850,15 @@ function renderDashboard() {
     ], { size: 130, centerLabel: `${pct}%`, centerSub: 'fait' });
   }, 100);
 
-  // ── GRAPHIQUE 4 — Donut statuts paiements ──
+  // ── GRAPHIQUE 4 — Donut statuts paiements (semaine en cours, données réelles) ──
   setTimeout(() => {
-    const ok      = memberDB.filter(m=>m.paiement==='ok').length;
-    const pending = memberDB.filter(m=>m.paiement==='pending').length;
-    const late    = memberDB.filter(m=>m.paiement==='late').length;
-    const noInfo  = memberDB.length - ok - pending - late;
+    const ws = cotisWeek?.membersState || [];
+    const payesS  = ws.filter(m=>m.paid).length;
+    const nonPaye = ws.length - payesS;
     drawDonutChart('chart-paiements', [
-      { label: '✅ À jour',     value: ok,      color: '#00C896' },
-      { label: '⏳ En attente', value: pending,  color: '#F0B429' },
-      { label: '❌ En retard',  value: late,     color: '#FF4D4D' },
-      { label: '— Non défini', value: noInfo,   color: '#2A2A2A' },
-    ].filter(s=>s.value>0), { size: 130, centerLabel: memberDB.length, centerSub: 'membres' });
+      { label: '✅ Payé',     value: payesS,   color: '#00C896' },
+      { label: '⏳ En attente', value: nonPaye, color: '#F0B429' },
+    ].filter(s=>s.value>0), { size: 130, centerLabel: `${payesS}/${ws.length}`, centerSub: 'payés' });
 
     // Top 5 scores dans la même carte
     const hist = getPaymentHistory();
@@ -9887,12 +9898,16 @@ function renderDashboard() {
          .map((s,i)=>({...s, groupe:'anc',  name: s.name || _ancMem[Number(_ancDr[i])], week: s.week||(i+1)})),
       ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))
          .map((s,i)=>({...s, groupe:'nouv', name: s.name || _nouvMem[Number(_nouvDr[i])], week: s.week||(_ancMem.filter(n=>n).length+i+1)}))
-    ].filter(s=>s.name).sort((a,b)=>a.week-b.week);
+    ].filter(s=>s.name).sort((a,b)=>{
+      const da = a.iso ? new Date(a.iso).getTime() : 0;
+      const db = b.iso ? new Date(b.iso).getTime() : 0;
+      return da - db;
+    });
 
     const { monday, sunday } = getCurrentWeekBounds();
     const pastDone = allSc.filter(s=>s.iso&&new Date(s.iso)<=today).slice(-2);
     const upcoming = allSc.filter(s=>s.iso&&new Date(s.iso)>today).slice(0,5);
-    const shown    = [...pastDone,...upcoming].slice(0,7);
+    const shown    = [...pastDone,...upcoming];
 
     if(!shown.length){ timeline.innerHTML=`<div class="empty-state"><div class="empty-icon">📅</div><p>Aucun calendrier.</p></div>`; }
     else {
@@ -9913,7 +9928,7 @@ function renderDashboard() {
               ${conf?'✅ ':isPast?'✓ ':isCur?'🔴 ':''}${esc(s.name||'—')}
               <span style="font-size:10px;color:${gc};margin-left:4px">${s.groupe==='anc'?'⭐':'🆕'}</span>
             </div>
-            <div class="tl-date">Sem. #${String(s.week).padStart(3,'0')} · ${s.date||'—'} · ${fmt(potSem)}</div>
+            <div class="tl-date">Sem. #${String(s.week).padStart(3,'0')} · ${s.date||'—'} · ${fmt(potDuBenef(s.name))}</div>
           </div>
         </div>`;
       }).join('');
