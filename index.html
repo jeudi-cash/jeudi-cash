@@ -5276,7 +5276,11 @@ function exportPDF() {
       if (isD && confirmed)   { statut='✅ BOUFFÉ';      color='#00C896'; bg='rgba(0,200,150,.08)'; icon='✅'; }
       else if (isD && isPast) { statut='Tiré · Passé';   color='#00C896'; bg='rgba(16,185,129,.05)'; icon='✓'; }
       else if (isD && !isPast){ statut='⏳ En attente';  color='#F0B429'; bg='rgba(240,180,41,.06)'; icon='⏳'; }
-      return { week:weekNum, date:s.date||'—', name:name||'—', groupe:g, montant:isD&&name?potDuBenefStr(name):'—', nbCotis:isD&&name?nbCotisants(name):'—', statut, color, bg, icon, confirmed, isD, isPast };
+      // Montant affiché : montant réellement reçu si confirmé, sinon montant théorique
+      const montantAffiche = (confirmed && confirmed.montantRecu != null)
+        ? confirmed.montantRecu.toLocaleString('fr-CA') + ' ' + DEVISE
+        : (isD && name ? potDuBenefStr(name) : '—');
+      return { week:weekNum, date:s.date||'—', name:name||'—', groupe:g, montant:montantAffiche, nbCotis:isD&&name?nbCotisants(name):'—', statut, color, bg, icon, confirmed, isD, isPast };
     });
   };
 
