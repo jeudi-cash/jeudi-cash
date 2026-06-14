@@ -9695,8 +9695,13 @@ function renderDashboard() {
     return sum + nbCotisants(s.name) * COTISATION;
   }, 0);
 
-  // Total en retard = attendu - reçu confirmé
-  const totalEnRetard = Math.max(0, totalAttendu - totalRecu);
+  // Total en retard = somme des déficits réels (montant dû − montant reçu)
+  // dans l'historique des réceptions confirmées
+  const totalEnRetard = receptionsHist.reduce((sum, r) => {
+    const du   = r.montantDu   || (nbCotisants(r.benefName) * COTISATION);
+    const recu = r.montantRecu || 0;
+    return sum + Math.max(0, du - recu);
+  }, 0);
 
   // Montant récupérable = cotisations futures (avec bons pots)
   const montantRecuperable = semFutures.reduce((sum, s) => {
@@ -9732,8 +9737,12 @@ function renderDashboard() {
   // KPI financiers
   upd('fin-total-recu', totalRecu>0 ? fmt(totalRecu) : '—');
   upd('fin-total-recu-sub', `${nbConfirmes} réception${nbConfirmes>1?'s':''} confirmée${nbConfirmes>1?'s':''}`);
+  const nbDeficits = receptionsHist.filter(r => {
+    const du = r.montantDu || (nbCotisants(r.benefName) * COTISATION);
+    return (du - (r.montantRecu||0)) > 0;
+  }).length;
   upd('fin-total-retard', totalEnRetard>0 ? fmt(totalEnRetard) : '✅ 0');
-  upd('fin-total-retard-sub', totalEnRetard>0 ? `Sur ${fmt(totalAttendu)} attendus` : 'Aucun retard détecté');
+  upd('fin-total-retard-sub', totalEnRetard>0 ? `${nbDeficits} semaine${nbDeficits>1?'s':''} avec déficit` : 'Aucun retard détecté');
   upd('fin-recuperable', fmt(montantRecuperable));
   upd('fin-recuperable-sub', `${semFutures.length} semaine${semFutures.length>1?'s':''} restante${semFutures.length>1?'s':''}`);
 
