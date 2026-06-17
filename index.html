@@ -5639,19 +5639,12 @@ function doSwap(){
 
   const nameA = membersA[Number(drawnA[schedPosA])] || '—';
   const nameB = membersB[Number(drawnB[schedPosB])] || '—';
-  const wAb = schedA[schedPosA]?.week, dAb = schedA[schedPosA]?.date;
-  const wBb = schedB[schedPosB]?.week, dBb = schedB[schedPosB]?.date;
+  // Les dates restent FIXES à leur position. On échange seulement les PERSONNES.
+  const wAb = schedA[schedPosA]?.week, dAb = schedA[schedPosA]?.date; // avant : ce que A avait
+  const wBb = schedB[schedPosB]?.week, dBb = schedB[schedPosB]?.date; // avant : ce que B avait
 
-  // Échanger les entrées du schedule
-  const tmpSched = Object.assign({}, schedA[schedPosA]);
-  schedA[schedPosA].week = schedB[schedPosB].week;
-  schedA[schedPosA].date = schedB[schedPosB].date;
-  schedA[schedPosA].iso  = schedB[schedPosB].iso;
-  schedB[schedPosB].week = tmpSched.week;
-  schedB[schedPosB].date = tmpSched.date;
-  schedB[schedPosB].iso  = tmpSched.iso;
-
-  // Échanger les entrées du drawn
+  // ⚠️ NE PAS échanger le schedule (dates) — elles restent attachées à leur position.
+  // On échange UNIQUEMENT les noms via drawn[].
   const tmpDrA = drawnA[schedPosA];
   if(gA===gB){
     drawnA[schedPosA] = drawnA[schedPosB];
@@ -5661,32 +5654,32 @@ function doSwap(){
     drawnB[schedPosB] = tmpDrA;
   }
 
+  // Après l'échange : A occupe maintenant la position B (donc la date de B), et vice-versa
+  const wAa = schedB[schedPosB]?.week, dAa = schedB[schedPosB]?.date; // A prend la date de B
+  const wBa = schedA[schedPosA]?.week, dBa = schedA[schedPosA]?.date; // B prend la date de A
+
   setSyncStatus('saving');
   const updates = {};
-  updates['jc2_'+gA+'_schedule'] = schedA;
-  updates['jc2_'+gA+'_drawn']    = drawnA;
+  updates['jc2_'+gA+'_drawn'] = drawnA;
   if(gA!==gB){
-    updates['jc2_'+gB+'_schedule'] = schedB;
-    updates['jc2_'+gB+'_drawn']    = drawnB;
+    updates['jc2_'+gB+'_drawn'] = drawnB;
   }
 
   db.ref('jeudi_cash').update(updates).then(function() {
     setSyncStatus('saved');
-    G[gA].schedule = schedA; G[gA].drawn = drawnA;
-    if(gA!==gB){ G[gB].schedule = schedB; G[gB].drawn = drawnB; }
-    localStorage.setItem('jc2_'+gA+'_schedule', JSON.stringify(schedA));
-    localStorage.setItem('jc2_'+gA+'_drawn',    JSON.stringify(drawnA));
+    G[gA].drawn = drawnA;
+    if(gA!==gB){ G[gB].drawn = drawnB; }
+    localStorage.setItem('jc2_'+gA+'_drawn', JSON.stringify(drawnA));
     if(gA!==gB){
-      localStorage.setItem('jc2_'+gB+'_schedule', JSON.stringify(schedB));
-      localStorage.setItem('jc2_'+gB+'_drawn',    JSON.stringify(drawnB));
+      localStorage.setItem('jc2_'+gB+'_drawn', JSON.stringify(drawnB));
     }
 
     const entry = {
       id:Date.now(), ts:new Date().toLocaleString('fr-CA'),
       aName:nameA, aGroup:gA, aWeekBefore:wAb, aDateBefore:dAb,
-      aWeekAfter:schedA[schedPosA]?.week, aDateAfter:schedA[schedPosA]?.date,
+      aWeekAfter:wAa, aDateAfter:dAa,
       bName:nameB, bGroup:gB, bWeekBefore:wBb, bDateBefore:dBb,
-      bWeekAfter:schedB[schedPosB]?.week, bDateAfter:schedB[schedPosB]?.date,
+      bWeekAfter:wBa, bDateAfter:dBa,
     };
     swapLog.unshift(entry);
     ls('jc2_swaplog', swapLog);
@@ -5696,9 +5689,9 @@ function doSwap(){
     if(resEl) resEl.classList.add('visible');
     const rowEl = document.getElementById('swap-result-row');
     if(rowEl) rowEl.innerHTML =
-      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameA)+'</b><br>Sem.'+wAb+' → Sem.'+schedA[schedPosA]?.week+'</div>' +
+      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameA)+'</b><br>'+dAb+' → '+dAa+'</div>' +
       '<div style="font-size:24px">⇄</div>' +
-      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameB)+'</b><br>Sem.'+wBb+' → Sem.'+schedB[schedPosB]?.week+'</div>';
+      '<div style="flex:1;text-align:center;padding:10px"><b>'+esc(nameB)+'</b><br>'+dBb+' → '+dBa+'</div>';
     const descEl = document.getElementById('swap-result-desc');
     if(descEl) descEl.textContent = '✅ '+nameA+' et '+nameB+' ont échangé leurs places !';
 
