@@ -8846,6 +8846,9 @@ function buildCotisWeek() {
     });
   });
 
+  // Trier par ordre alphabétique (insensible à la casse et aux accents)
+  allMembers.sort((a, b) => a.name.localeCompare(b.name, 'fr', { sensitivity: 'base', numeric: true }));
+
   const nouveauCotis = { weekKey, weekNum, weekDate, membersState: allMembers, benefExclus: exclus };
 
   // buildCotisWeek NE SAUVEGARDE JAMAIS dans Firebase.
