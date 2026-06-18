@@ -8785,8 +8785,13 @@ function isCollectionOpen() {
 function buildCotisWeek() {
   const { monday, thursday } = getCurrentWeekBounds();
   const weekKey  = monday.toISOString().split('T')[0];
+
+  // Numéro de semaine RÉEL basé sur la date (source de vérité)
+  const realStart = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-07T12:00:00');
+  const realWeekNum = Math.max(1, Math.round((thursday - realStart) / (7*24*3600*1000)) + 1);
+
   const benef    = getCurrentWeekBenef();
-  const weekNum  = benef ? benef.week : ((G.anc.drawn.length||0) + (G.nouv.drawn.length||0));
+  const weekNum  = realWeekNum;  // ← toujours la semaine calculée par date
   const weekDate = benef ? benef.date :
     thursday.toLocaleDateString('fr-CA',{weekday:'long',day:'2-digit',month:'long',year:'numeric'});
 
@@ -8794,7 +8799,7 @@ function buildCotisWeek() {
   if (!cotisWeek || !cotisWeek.membersState || !cotisWeek.membersState.length) {
     try {
       const saved = JSON.parse(localStorage.getItem('jc2_cotis_week') || 'null');
-      if (saved && saved.membersState && saved.membersState.length) {
+      if (saved && saved.membersState && saved.membersState.length && saved.weekNum === weekNum) {
         cotisWeek = saved;
       }
     } catch(e) {}
@@ -8806,8 +8811,22 @@ function buildCotisWeek() {
     return;
   }
 
-  // Exclure le bénéficiaire et sa famille
-  const exclus = benef ? getFamille(benef.name).membres.map(n=>n.trim()) : [];
+  // Exclure le bénéficiaire RÉEL de cette semaine (résolu par position dans le schedule)
+  let benefName = benef ? benef.name : null;
+  // Vérifier via la position dans le schedule (source fiable après échanges)
+  const _ancMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
+  const _ancDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
+  const _nMem   = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
+  const _nDr    = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
+  const _ancLen = _ancMem.filter(n=>n).length;
+  if (weekNum >= 1 && weekNum <= _ancLen) {
+    const resolved = _ancMem[Number(_ancDr[weekNum-1])];
+    if (resolved) benefName = resolved;
+  } else if (weekNum > _ancLen) {
+    const resolved = _nMem[Number(_nDr[weekNum - _ancLen - 1])];
+    if (resolved) benefName = resolved;
+  }
+  const exclus = benefName ? getFamille(benefName).membres.map(n=>n.trim()) : [];
 
   // Garder TOUS les paiements existants (par nom) si même semaine
   const oldPaid = {};
