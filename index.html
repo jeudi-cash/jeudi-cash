@@ -1788,10 +1788,10 @@ select{
       <span class="bn-icon">🏠</span><span class="bn-label">ACCUEIL</span>
     </button>
     <button class="bn-item" id="bn-tracabilite" onclick="switchTabMobile('tracabilite',this)">
-      <span class="bn-icon">✅</span><span class="bn-label">SUIVI</span>
+      <span class="bn-icon">✅</span><span class="bn-label">COTISATIONS</span>
     </button>
-    <button class="bn-item" id="bn-notifications" onclick="switchTabMobile('notifications',this)">
-      <span class="bn-icon">🔔</span><span class="bn-label">NOTIFS</span>
+    <button class="bn-item" id="bn-notifications" onclick="switchTabMobile('tracabilite',this);setTimeout(function(){switchTracTab('rappels');},150)">
+      <span class="bn-icon">🔔</span><span class="bn-label">RAPPELS</span>
     </button>
     <button class="bn-item" id="bn-calendrier" onclick="switchTabMobile('calendrier',this)">
       <span class="bn-icon">📅</span><span class="bn-label">CALENDRIER</span>
@@ -2051,8 +2051,7 @@ select{
     <button class="tab" onclick="switchTab('tirage',this)">🎰 Tirage</button>
     <button class="tab" onclick="switchTab('calendrier',this)">📅 Calendrier</button>
     <button class="tab" onclick="switchTab('echange',this)">🔄 Échange</button>
-    <button class="tab" id="tab-trac-btn" onclick="switchTab('tracabilite',this)">✅ Suivi</button>
-    <button class="tab" id="tab-notif-btn" onclick="switchTab('notifications',this)">🔔 Notifs</button>
+    <button class="tab" id="tab-trac-btn" onclick="switchTab('tracabilite',this)">✅ Cotisations</button>
     <button class="tab" id="tab-dash-btn" onclick="switchTab('dashboard',this)">📊 Stats</button>
     
     
@@ -2404,6 +2403,7 @@ select{
     <!-- Sous-onglets -->
     <div style="display:flex;gap:4px;background:var(--dark4);border-radius:10px;padding:4px;margin-bottom:16px;overflow-x:auto">
       <button class="tab active" id="trac-tab-semaine" onclick="switchTracTab('semaine',this)" style="flex:1;white-space:nowrap;font-size:12px">📋 Semaine</button>
+      <button class="tab" id="trac-tab-rappels" onclick="switchTracTab('rappels',this)" style="flex:1;white-space:nowrap;font-size:12px">🔔 Rappels</button>
       <button class="tab" id="trac-tab-historique" onclick="switchTracTab('historique',this)" style="flex:1;white-space:nowrap;font-size:12px">📜 Historique</button>
       <button class="tab" id="trac-tab-scores" onclick="switchTracTab('scores',this)" style="flex:1;white-space:nowrap;font-size:12px">🏆 Scores</button>
       <button class="tab" id="trac-tab-retards" onclick="switchTracTab('retards',this)" style="flex:1;white-space:nowrap;font-size:12px">⚠️ Retards</button>
@@ -2510,6 +2510,35 @@ select{
         <div id="retards-list">
           <div class="empty-state"><div class="empty-icon">✅</div><p>Tout le monde a payé !</p></div>
         </div>
+      </div>
+    </div>
+
+    <!-- ══ RAPPELS (ex-Notifs) ══ -->
+    <div id="trac-panel-rappels" style="display:none">
+      <div style="background:linear-gradient(135deg,#0A1A00,#051200);border:2px solid rgba(16,185,129,.4);border-radius:18px;padding:20px;margin-bottom:16px;text-align:center">
+        <div style="font-size:30px;margin-bottom:6px">🌅</div>
+        <div style="font-family:'Space Grotesk',sans-serif;font-size:20px;letter-spacing:2px;color:var(--green);margin-bottom:6px">RAPPEL DU JEUDI</div>
+        <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--t3);margin-bottom:16px">Génère les messages WhatsApp en 1 tap</div>
+        <div id="trc-jeudi-status" style="background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:10px 14px;margin-bottom:14px;font-family:'JetBrains Mono',monospace;font-size:11px"></div>
+        <button onclick="lancerRappelJeudi()" style="width:100%;padding:16px;border:none;border-radius:14px;cursor:pointer;background:linear-gradient(135deg,#00C896,#059669);color:#fff;font-family:'Space Grotesk',sans-serif;font-size:18px;letter-spacing:2px">
+          📱 LANCER LES RAPPELS WHATSAPP
+        </button>
+      </div>
+
+      <div class="notif-section">
+        <div class="notif-title" style="font-size:15px">👁️ Aperçu du message groupe</div>
+        <div class="notif-desc">Message qui sera envoyé dans ton groupe WhatsApp</div>
+        <div class="wa-group-msg" id="trc-wa-group-msg" style="white-space:pre-wrap;font-size:12px;background:var(--s2);border:1px solid var(--b1);border-radius:10px;padding:12px;margin-top:8px;max-height:200px;overflow-y:auto">Chargement...</div>
+        <div class="btn-row" style="margin-top:8px">
+          <button class="copy-btn" onclick="copyGroupMsg()">📋 Copier</button>
+          <button class="notif-btn-wa" onclick="openGroupWA()" style="font-size:13px">📱 Envoyer au groupe</button>
+        </div>
+      </div>
+
+      <div style="text-align:center;margin-top:10px">
+        <button onclick="switchTab('notifications')" style="background:none;border:none;color:var(--t3);font-size:11px;text-decoration:underline;cursor:pointer">
+          Voir toutes les options de notifications →
+        </button>
       </div>
     </div>
 
@@ -8554,7 +8583,7 @@ function startCountdown() {
 }
 
 function switchTracTab(name, btn) {
-  const panels = ['semaine','scores','retards','historique'];
+  const panels = ['semaine','rappels','scores','retards','historique'];
   panels.forEach(t => {
     const panel = document.getElementById('trac-panel-' + t);
     if (panel) {
@@ -8567,6 +8596,31 @@ function switchTracTab(name, btn) {
   if (name === 'scores')     renderScores();
   if (name === 'retards')    renderRetards();
   if (name === 'historique') renderTracHist();
+  if (name === 'rappels')    renderRappelsPanel();
+}
+
+// Remplit le sous-onglet Rappels (réutilise les fonctions de notifications)
+function renderRappelsPanel() {
+  try {
+    // Générer le message de groupe via renderNotifications (qui remplit wa-group-msg)
+    if (typeof renderNotifications === 'function') {
+      try { renderNotifications(); } catch(e) {}
+    }
+    // Statut du jour
+    const statusEl = document.getElementById('trc-jeudi-status');
+    if (statusEl) {
+      const benef = getCurrentWeekBenef();
+      const ws = cotisWeek?.membersState || [];
+      const payes = ws.filter(m=>m.paid).length;
+      statusEl.innerHTML = benef
+        ? '🏆 ' + benef.name + ' · ' + payes + '/' + ws.length + ' payés'
+        : 'Aucun bénéficiaire cette semaine';
+    }
+    // Copier le message de groupe généré
+    const msgEl = document.getElementById('trc-wa-group-msg');
+    const srcMsg = document.getElementById('wa-group-msg');
+    if (msgEl && srcMsg && srcMsg.textContent) msgEl.textContent = srcMsg.textContent;
+  } catch(e) { console.warn('renderRappelsPanel:', e); }
 }
 
 // ═══════════════════════════════════════
