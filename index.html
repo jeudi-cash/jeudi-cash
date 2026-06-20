@@ -1458,12 +1458,6 @@ select{
 
 /* MOBILE (par défaut, < 768px) — tout en pleine largeur */
 .container { width: 100%; max-width: 100%; margin: 0; padding: 0 0 140px; box-sizing: border-box; }
-/* Espace supplémentaire en bas des onglets sur mobile pour ne pas masquer les boutons */
-@media (max-width: 767px) {
-  .tab-panel { padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important; }
-  #wa-resume-msg { max-height: 130px !important; }
-  #recap-msg { max-height: 110px !important; }
-}
 .tab-panel { width: 100%; box-sizing: border-box; padding: 14px; }
 .tabs { display: none; }
 .bottom-nav { display: grid; }
@@ -1521,6 +1515,13 @@ select{
   .bottom-nav, .tabs, #cfg-bar, #session-bar, .search-fab { display: none !important; }
 }
 
+/* ═══ ESPACE BAS MOBILE — boutons accessibles au-dessus de la barre nav (priorité max) ═══ */
+@media (max-width: 767px) {
+  .tab-panel { padding-bottom: calc(130px + env(safe-area-inset-bottom)) !important; }
+  #wa-resume-msg { max-height: 130px !important; }
+  #recap-msg { max-height: 110px !important; }
+  #trc-wa-group-msg { max-height: 150px !important; }
+}
 
 </style>
 </head>
