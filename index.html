@@ -1460,7 +1460,9 @@ select{
 .container { width: 100%; max-width: 100%; margin: 0; padding: 0 0 140px; box-sizing: border-box; }
 /* Espace supplémentaire en bas des onglets sur mobile pour ne pas masquer les boutons */
 @media (max-width: 767px) {
-  .tab-panel { padding-bottom: calc(90px + env(safe-area-inset-bottom)); }
+  .tab-panel { padding-bottom: calc(120px + env(safe-area-inset-bottom)) !important; }
+  #wa-resume-msg { max-height: 130px !important; }
+  #recap-msg { max-height: 110px !important; }
 }
 .tab-panel { width: 100%; box-sizing: border-box; padding: 14px; }
 .tabs { display: none; }
