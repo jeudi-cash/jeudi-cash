@@ -5252,8 +5252,23 @@ function exportPDF() {
   const qrData    = encodeURIComponent('https://jeudi-cash.github.io/jeudi-cash');
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrData}&bgcolor=0a0a0a&color=F0B429&margin=8`;
 
-  // ── Pot moyen (membre seul) pour KPI ──
+  // ── Pot par semaine : calculer la fourchette réelle (min–max) ──
   const pot = potDuBenefStr();
+  let potRangeStr = pot;
+  try {
+    const allNames = [
+      ...(Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{})),
+      ...(Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}))
+    ].filter(n=>n);
+    const pots = allNames.map(n => potDuBenef(n)).filter(p => p > 0);
+    if (pots.length) {
+      const minP = Math.min(...pots);
+      const maxP = Math.max(...pots);
+      potRangeStr = minP === maxP
+        ? minP.toLocaleString('fr-CA') + ' $'
+        : minP.toLocaleString('fr-CA') + '–' + maxP.toLocaleString('fr-CA') + ' $';
+    }
+  } catch(e) {}
 
   // ── Construire les lignes ──
   const buildRows = (g) => {
@@ -5500,7 +5515,7 @@ function exportPDF() {
     <div class="kpi-chip gold"><div class="kpi-v">${ancCount}</div><div class="kpi-l">Anciens</div></div>
     <div class="kpi-chip blue"><div class="kpi-v">${nouvCount}</div><div class="kpi-l">Nouveaux</div></div>
     <div class="kpi-chip gold"><div class="kpi-v">${totalMembers()}</div><div class="kpi-l">Total</div></div>
-    <div class="kpi-chip gold"><div class="kpi-v" style="font-size:16px">${pot}</div><div class="kpi-l">Pot / Sem.</div></div>
+    <div class="kpi-chip gold"><div class="kpi-v" style="font-size:13px">${potRangeStr}</div><div class="kpi-l">Pot / Sem.</div></div>
     <div class="kpi-chip green"><div class="kpi-v">${paidCount}/${totalMembers()}</div><div class="kpi-l">Tirages</div></div>
     <div class="kpi-chip green"><div class="kpi-v">${confirmedCount}</div><div class="kpi-l">Confirmés</div></div>
   </div>
