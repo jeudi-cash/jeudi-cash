@@ -5173,15 +5173,27 @@ function renderCalendar(){
 }
 
 function calCard(r, g){
-  // Le tour est "terminé" UNIQUEMENT si le bénéficiaire a reçu tout son argent :
-  // soit la réception est confirmée à 100%, soit tous les cotisants ont payé.
+  // Le tour est "terminé" si le bénéficiaire a reçu tout son argent :
+  // soit réception confirmée à 100%, soit la collecte de sa semaine est complète (tous ont cotisé).
   let tourTermine = false;
+  let montantRecu = null;
+
+  // 1. Vérifier la réception confirmée
   if (r.confirmed) {
-    // Réception confirmée : vérifier que le montant reçu = montant dû
     const conf = receptionsHist.find(x => x.weekNum === r.week);
     if (conf) {
       const du = conf.montantDu || (r.name ? nbCotisants(r.name) * COTISATION : 0);
-      tourTermine = (conf.montantRecu || 0) >= du;
+      montantRecu = conf.montantRecu || 0;
+      tourTermine = montantRecu >= du;
+    }
+  }
+
+  // 2. Sinon, vérifier si la collecte de CETTE semaine est à 100%
+  //    (utile pour la semaine en cours avant confirmation manuelle)
+  if (!tourTermine && r.name && cotisWeek && cotisWeek.weekNum === r.week) {
+    const ws = cotisWeek.membersState || [];
+    if (ws.length > 0 && ws.every(m => m.paid)) {
+      tourTermine = true;
     }
   }
 
@@ -5197,7 +5209,6 @@ function calCard(r, g){
   const fam   = r.name ? getFamille(r.name) : null;
   const hasFam= fam && fam.membres.length > 1;
   const isCur = r.cur && !tourTermine;
-  // Nom barré UNIQUEMENT quand le bénéficiaire a tout reçu
   const nameStyle = tourTermine ? 'text-decoration:line-through;color:var(--t3)' : '';
   return `<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:10px;background:${isCur?'rgba(79,142,247,.05)':'var(--s2)'};border:1px solid ${isCur?'rgba(79,142,247,.2)':'var(--b0)'};margin-bottom:4px">
     <div style="font-family:'JetBrains Mono',monospace;font-weight:700;font-size:12px;color:${numColor};min-width:34px;flex-shrink:0">#${String(r.week).padStart(3,'0')}</div>
