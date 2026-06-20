@@ -1852,10 +1852,10 @@ select{
       <button class="more-btn-sm" onclick="switchTabFromMore('membres')">
         <span>👥</span><span>Membres</span>
       </button>
-      <button class="more-btn-sm" onclick="switchTabFromMore('tirage')">
+      <button class="more-btn-sm" onclick="closeMoreMenu();switchTab('calendrier');setTimeout(function(){switchCalTab('tirage');},150)">
         <span>🎰</span><span>Tirage</span>
       </button>
-      <button class="more-btn-sm" onclick="switchTabFromMore('echange')">
+      <button class="more-btn-sm" onclick="closeMoreMenu();switchTab('calendrier');setTimeout(function(){switchCalTab('echange');},150)">
         <span>🔄</span><span>Échange</span>
       </button>
     </div>
@@ -2055,9 +2055,7 @@ select{
   <div class="tabs" id="main-tabs">
     <button class="tab active" id="tab-home-btn" onclick="switchTab('home',this)">🏠 Accueil</button>
     <button class="tab" onclick="switchTab('membres',this)">👥 Membres</button>
-    <button class="tab" onclick="switchTab('tirage',this)">🎰 Tirage</button>
     <button class="tab" onclick="switchTab('calendrier',this)">📅 Calendrier</button>
-    <button class="tab" onclick="switchTab('echange',this)">🔄 Échange</button>
     <button class="tab" id="tab-trac-btn" onclick="switchTab('tracabilite',this)">✅ Cotisations</button>
     <button class="tab" id="tab-dash-btn" onclick="switchTab('dashboard',this)">📊 Stats</button>
     
@@ -2322,6 +2320,15 @@ select{
 
   <!-- ══ CALENDRIER ══ (visible à tous) -->
   <div class="tab-panel" id="tab-calendrier" style="display:none">
+    <!-- Sous-onglets Calendrier -->
+    <div class="tabs" style="display:flex;gap:4px;margin-bottom:14px;padding:0 4px;overflow-x:auto">
+      <button class="tab active" id="cal-tab-calendrier" onclick="switchCalTab('calendrier',this)" style="flex:1;white-space:nowrap;font-size:13px">📅 Calendrier</button>
+      <button class="tab" id="cal-tab-echange" onclick="switchCalTab('echange',this)" style="flex:1;white-space:nowrap;font-size:13px">🔄 Échange</button>
+      <button class="tab" id="cal-tab-tirage" onclick="switchCalTab('tirage',this)" style="flex:1;white-space:nowrap;font-size:13px">🎰 Tirage</button>
+    </div>
+
+    <!-- Panel Calendrier -->
+    <div id="cal-panel-calendrier">
     <div class="section">
       <div class="section-title">📅 Calendrier complet</div>
       <div class="cal-toolbar">
@@ -2331,9 +2338,16 @@ select{
       </div>
       <div class="cal-scroll"><div id="cal-content"><div id="cal-empty-state"></div></div></div>
     </div>
+    </div><!-- /cal-panel-calendrier -->
+
+    <!-- Panel Échange (rempli dynamiquement, voir plus bas) -->
+    <div id="cal-panel-echange" style="display:none"></div>
+
+    <!-- Panel Tirage (rempli dynamiquement, voir plus bas) -->
+    <div id="cal-panel-tirage" style="display:none"></div>
   </div>
 
-  <!-- ══ ÉCHANGE ══ -->
+  <!-- ══ ÉCHANGE (source — déplacé dans Calendrier via JS) ══ -->
   <div class="tab-panel" id="tab-echange" style="display:none">
     <div id="echange-locked" class="locked-overlay" style="display:none">
       <div class="locked-icon">🔒</div>
@@ -9446,7 +9460,7 @@ function switchTab(name) {
     }
     if (name === 'tirage')        { updateTirageUI('anc'); updateTirageUI('nouv'); renderGrid('anc'); renderGrid('nouv'); renderChips('anc'); renderChips('nouv'); }
     if (name === 'notifications') { renderNotifications(); setTimeout(generateResumeMsg, 200); }
-    if (name === 'calendrier')    renderCalendar();
+    if (name === 'calendrier')    { moveCalContent(); switchCalTab('calendrier'); }
     if (name === 'dashboard')     { try { renderDashboard(); } catch(e) { console.warn('dashboard err:', e); } }
     if (name === 'echange')       { try { renderSwapLog(); } catch(e) {} }
     if (name === 'sanctions')     renderSanctions();
@@ -9459,6 +9473,43 @@ function switchTab(name) {
 
 function switchTabMobile(name, btn) { switchTab(name); }
 function switchTabFromMore(name)    { switchTab(name); }
+
+// ═══════════════════════════════════════
+//  SOUS-ONGLETS DU CALENDRIER (Calendrier / Échange / Tirage)
+// ═══════════════════════════════════════
+let _calContentMoved = false;
+function moveCalContent() {
+  if (_calContentMoved) return;
+  // Déplacer le contenu de l'onglet Échange dans le sous-panel
+  const srcEch = document.getElementById('tab-echange');
+  const dstEch = document.getElementById('cal-panel-echange');
+  if (srcEch && dstEch) {
+    while (srcEch.firstChild) dstEch.appendChild(srcEch.firstChild);
+  }
+  // Déplacer le contenu de l'onglet Tirage dans le sous-panel
+  const srcTir = document.getElementById('tab-tirage');
+  const dstTir = document.getElementById('cal-panel-tirage');
+  if (srcTir && dstTir) {
+    while (srcTir.firstChild) dstTir.appendChild(srcTir.firstChild);
+  }
+  _calContentMoved = true;
+}
+
+function switchCalTab(name, btn) {
+  moveCalContent();
+  const panels = ['calendrier','echange','tirage'];
+  panels.forEach(t => {
+    const panel = document.getElementById('cal-panel-' + t);
+    if (panel) panel.style.display = t === name ? 'block' : 'none';
+    const tb = document.getElementById('cal-tab-' + t);
+    if (tb) tb.classList.toggle('active', t === name);
+  });
+  try {
+    if (name === 'calendrier') renderCalendar();
+    if (name === 'echange')    { renderSwapLog(); }
+    if (name === 'tirage')     { updateTirageUI('anc'); updateTirageUI('nouv'); renderGrid('anc'); renderGrid('nouv'); renderChips('anc'); renderChips('nouv'); }
+  } catch(e) { console.warn('switchCalTab:', e); }
+}
 
 
 // Fermer le menu Plus si on appuie sur Échap
