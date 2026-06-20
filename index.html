@@ -7272,21 +7272,47 @@ function renderRecapFinSemaine() {
   if (msgEl) {
     var dateStr = today.toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
     var nonPayes = allM.filter(function(m) { return !m.paid; });
-    var paidLines = paid.map(function(m) { return '   ✅ ' + m.name; }).join('\n');
+
+    // Trouver le prochain bénéficiaire (semaine suivante)
+    var prochainNom = '', prochainDate = '';
+    try {
+      var _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
+      var _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
+      var _aSch = (Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}));
+      var _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
+      var _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
+      var _nSch = (Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}));
+      var _aLen = _aMem.filter(function(n){return n;}).length;
+      var nextWeek = benef.week + 1;
+      if (nextWeek <= _aLen) {
+        prochainNom  = _aMem[Number(_aDr[nextWeek-1])] || '';
+        prochainDate = _aSch[nextWeek-1] ? _aSch[nextWeek-1].date : '';
+      } else {
+        var ni = nextWeek - _aLen - 1;
+        prochainNom  = _nMem[Number(_nDr[ni])] || '';
+        prochainDate = _nSch[ni] ? _nSch[ni].date : '';
+      }
+    } catch(e) {}
+
+    var prochainSection = prochainNom
+      ? '\n👉 *Prochain bénéficiaire :*\n🏆 ' + prochainNom + (prochainDate ? ' — ' + prochainDate : '') + '\n'
+      : '';
+
     var nonPayesSection = nonPayes.length > 0
-      ? '\n❌ *N\'ont pas cotisé (' + nonPayes.length + ') :*\n' + nonPayes.map(function(m) { return '   ❌ ' + m.name; }).join('\n')
-      : '\n🎊 *Participation à 100% ! Merci à tous !*';
+      ? '\n⏳ *En attente de cotisation (' + nonPayes.length + ') :*\n' + nonPayes.map(function(m) { return '   • ' + m.name; }).join('\n') + '\n'
+      : '\n🎊 *Participation complète — merci à tous !*\n';
 
     msgEl.textContent =
-      '🏦 *JEUDI CASH — Récapitulatif Semaine #' + String(benef.week).padStart(3,'0') + '*\n' +
+      '🎉 *JEUDI CASH — Tour #' + String(benef.week).padStart(3,'0') + ' terminé*\n' +
       '📅 ' + dateStr + '\n\n' +
-      '🎉 *Félicitations à ' + benef.name + ' !*\n\n' +
-      '✅ *La bénéficiaire a reçu son pot de ' + montantRecu.toLocaleString('fr-CA') + ' $ ' + DEVISE + '*\n\n' +
-      '📊 *Participation : ' + paid.length + '/' + total + ' membres (' + pct + '%)*\n\n' +
-      '✅ *Ont cotisé (' + paid.length + ') :*\n' +
-      paidLines +
-      nonPayesSection + '\n\n' +
-      'Merci à tous pour votre ponctualité et votre confiance. 🙏\n\n' +
+      'Félicitations à *' + benef.name + '* qui a reçu sa cagnotte cette semaine ! 🙌\n\n' +
+      '💰 *Montant reçu :* ' + montantRecu.toLocaleString('fr-CA') + ' $ ' + DEVISE + '\n' +
+      '📅 *Reçu le :* ' + benef.date + '\n' +
+      '👥 *Cotisants :* ' + paid.length + '/' + total + ' membres (' + pct + '%)\n' +
+      nonPayesSection +
+      '\nMerci à toutes et à tous pour votre ponctualité. C\'est votre discipline qui fait vivre notre tontine. 💪\n' +
+      prochainSection +
+      '\n📈 *Progression :* tour ' + benef.week + '/' + (allM.length ? 35 : 35) + '\n\n' +
       '_Jeudi Cash — Tontine Officielle_ 🏦';
   }
 
