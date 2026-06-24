@@ -8304,24 +8304,27 @@ function renderHome() {
     upd('home-benef-pot', '—');
   }
 
-  // Compte à rebours
+  // Compte à rebours — la collecte est OUVERTE uniquement le jeudi (00h00 à 23h59)
   const cdEl = document.getElementById('home-countdown');
   if (cdEl) {
     const { thursday } = getCurrentWeekBounds();
-    // La remise se fait toute la journée du jeudi → viser jeudi 23h59
-    const thuEnd = new Date(thursday); thuEnd.setHours(23,59,59,999);
     if (isJeudi) {
-      cdEl.innerHTML = `<span style="color:var(--green)">🟢 JOUR DE REMISE</span> · Le bénéficiaire reçoit aujourd'hui`;
+      // Jeudi : collecte ouverte, fermeture à 23h59
+      const thuEnd = new Date(thursday); thuEnd.setHours(23,59,59,999);
+      const diff = thuEnd - now;
+      const h = Math.floor(diff/3600000);
+      const m = Math.floor((diff%3600000)/60000);
+      cdEl.innerHTML = `<span style="color:var(--green)">🟢 COLLECTE OUVERTE</span> · Fermeture dans <b style="color:var(--gold)">${h}h ${String(m).padStart(2,'0')}m</b>`;
     } else {
-      // Viser la fin du prochain jeudi (23h59), pas minuit
-      const next = new Date(thursday);
-      next.setHours(23,59,59,999);
-      if (now > thuEnd) next.setDate(next.getDate() + 7);
-      const diff = next - now;
+      // Autres jours : collecte fermée, ouverture au prochain jeudi 00h00
+      const nextThu = new Date(thursday);
+      nextThu.setHours(0,0,0,0);
+      if (now >= nextThu) nextThu.setDate(nextThu.getDate() + 7);
+      const diff = nextThu - now;
       const d = Math.floor(diff/86400000);
       const h = Math.floor((diff%86400000)/3600000);
       const tempsStr = d > 0 ? `${d}j ${h}h` : `${h}h`;
-      cdEl.innerHTML = `<span style="color:var(--green)">🟢 Collecte en cours</span> · Remise dans <b style="color:var(--gold)">${tempsStr}</b>`;
+      cdEl.innerHTML = `<span style="color:var(--t3)">🔴 Collecte fermée</span> · Ouverture dans <b style="color:var(--gold)">${tempsStr}</b>`;
     }
   }
 
