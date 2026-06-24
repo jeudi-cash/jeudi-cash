@@ -8951,14 +8951,8 @@ function getCurrentWeekBenef() {
       week:realWeekNum, date:rh.weekDate||'', montantDu:potDuBenef(rh.benefName) };
   }
 
-  // ── 3. cotisWeek.benefExclus ──
-  if (cotisWeek?.weekNum === realWeekNum && cotisWeek?.benefExclus?.length) {
-    const name = cotisWeek.benefExclus[0];
-    if (name) return { name, groupe:'anc', week:realWeekNum,
-      date:cotisWeek.weekDate||'', montantDu:potDuBenef(name) };
-  }
-
-  // ── 4. drawn + members par index ──
+  // ── 3. drawn + members par index (SOURCE FIABLE — lit le vrai bénéficiaire du schedule) ──
+  // (On ne se fie PAS à cotisWeek.benefExclus[0] qui contient juste le 1er membre de la famille)
   const wn = realWeekNum;
   let name = null, groupe = 'anc', date = '';
   if (wn >= 1 && wn <= ancLen && ancDrawn.length >= wn) {
