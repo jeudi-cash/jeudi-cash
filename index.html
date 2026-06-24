@@ -4764,9 +4764,54 @@ function resyncMaintenant(raison) {
     .catch(() => setSyncStatus('error'));
 }
 
+// Détecte le passage à une nouvelle semaine et reconstruit cotisWeek automatiquement
+// (archive les paiements de la semaine précédente, remet à zéro pour le nouveau bénéficiaire)
+let _lastWeekCheck = 0;
+function verifierChangementSemaine() {
+  try {
+    const { thursday } = getCurrentWeekBounds();
+    const realStart = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-07T12:00:00');
+    const realWeekNum = Math.max(1, Math.round((thursday - realStart) / (7*24*3600*1000)) + 1);
+
+    // Si cotisWeek est sur une semaine différente de la semaine réelle → reconstruire
+    if (cotisWeek && cotisWeek.weekNum && cotisWeek.weekNum !== realWeekNum) {
+      // Archiver les paiements de la semaine qui se termine dans l'historique
+      try {
+        if (typeof archiverPaiementsSemaine === 'function') {
+          archiverPaiementsSemaine(cotisWeek);
+        }
+      } catch(e) {}
+
+      // Reconstruire pour la nouvelle semaine (remet les paiements à zéro)
+      cotisWeek = null;
+      buildCotisWeek();
+
+      // Sauvegarder
+      if (db && cotisWeek) {
+        db.ref('jeudi_cash/jc2_cotis_week').set(cotisWeek).catch(()=>{});
+        try { localStorage.setItem('jc2_cotis_week', JSON.stringify(cotisWeek)); } catch(e){}
+      }
+
+      // Rafraîchir l'affichage
+      try { renderHome(); } catch(e){}
+      try { if (_currentTab === 'tracabilite') renderTracabilite(); } catch(e){}
+
+      console.log('🔄 Nouvelle semaine détectée : passage à la semaine', realWeekNum);
+      return true;
+    }
+  } catch(e) { console.warn('verifierChangementSemaine:', e); }
+  return false;
+}
+
 function setupMobileSyncReliability() {
   if (_mobileSyncSetup) return;
   _mobileSyncSetup = true;
+
+  // Vérifier le changement de semaine au démarrage
+  verifierChangementSemaine();
+
+  // Vérifier le changement de semaine toutes les 5 minutes
+  setInterval(verifierChangementSemaine, 5 * 60 * 1000);
 
   // 1. Retour sur l'app (changement d'onglet, déverrouillage téléphone)
   document.addEventListener('visibilitychange', function() {
@@ -8877,7 +8922,7 @@ function getCurrentWeekBenef() {
   const { thursday } = getCurrentWeekBounds();
 
   // Numéro de semaine depuis le 07 mai 2026
-  const realStart   = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-14T12:00:00');
+  const realStart   = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-07T12:00:00');
   const diffMs      = thursday - realStart;
   const realWeekNum = Math.max(1, Math.round(diffMs / (7*24*3600*1000)) + 1);
 
