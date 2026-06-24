@@ -8268,14 +8268,14 @@ function renderHome() {
       const diff = thuEnd - now;
       const h = Math.floor(diff/3600000);
       const m = Math.floor((diff%3600000)/60000);
-      cdEl.innerHTML = `<span style="color:var(--green)">🟢 COLLECTE OUVERTE</span> · Fermeture dans <b style="color:var(--gold)">${h}h ${String(m).padStart(2,'0')}m</b>`;
+      cdEl.innerHTML = `<span style="color:var(--green)">🟢 JOUR DE REMISE</span> · Le bénéficiaire reçoit aujourd'hui`;
     } else {
       const next = new Date(thursday);
       if (now >= thursday) next.setDate(next.getDate() + 7);
       const diff = next - now;
       const d = Math.floor(diff/86400000);
       const h = Math.floor((diff%86400000)/3600000);
-      cdEl.innerHTML = `<span style="color:var(--t3)">🔴 Collecte fermée</span> · Prochain jeudi dans <b style="color:var(--gold)">${d>0?d+'j ':''} ${h}h</b>`;
+      cdEl.innerHTML = `<span style="color:var(--green)">🟢 Collecte en cours</span> · Remise dans <b style="color:var(--gold)">${d>0?d+'j ':''}${h}h</b>`;
     }
   }
 
@@ -8291,16 +8291,34 @@ function renderHome() {
   upd('home-cotis-recu',   `${(paid.length*COTISATION).toLocaleString('fr-CA')} ${DEVISE} reçu`);
   upd('home-cotis-manque', `${(unpaid.length*COTISATION).toLocaleString('fr-CA')} ${DEVISE} manquant`);
 
-  // Progression cycle
-  const cyclePct = total > 0 ? Math.round(done/total*100) : 0;
-  const cycleBar = document.getElementById('home-cycle-bar');
-  if (cycleBar) cycleBar.style.width = cyclePct + '%';
-  upd('home-cycle-lbl', `${done}/${total}`);
+  // Progression cycle = semaines réellement écoulées (par date), pas le nombre de tirages
   const allSched = [...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{})),
                    ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))]
-                  .sort((a,b)=>a.week-b.week);
-  const nextB = allSched.find(s=>s.iso&&new Date(s.iso)>now&&s.name);
-  upd('home-cycle-next', nextB ? `Prochain : ${nextB.name} — ${nextB.date}` : 'Cycle terminé !');
+                  .filter(s=>s.iso)
+                  .sort((a,b)=>new Date(a.iso)-new Date(b.iso));
+  const todayCycle = new Date(); todayCycle.setHours(23,59,59,0);
+  const semEcoulees = allSched.filter(s => new Date(s.iso) <= todayCycle).length;
+  const totalSem = allSched.length || total;
+  const cyclePct = totalSem > 0 ? Math.round(semEcoulees/totalSem*100) : 0;
+  const cycleBar = document.getElementById('home-cycle-bar');
+  if (cycleBar) cycleBar.style.width = cyclePct + '%';
+  upd('home-cycle-lbl', `${semEcoulees}/${totalSem}`);
+  // Résoudre les noms du prochain bénéficiaire via drawn
+  const _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
+  const _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
+  const _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
+  const _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
+  const _aLen = _aMem.filter(n=>n).length;
+  const allSchedNamed = allSched.map((s,i) => {
+    let nm = s.name;
+    if (!nm) {
+      const w = s.week || (i+1);
+      nm = w <= _aLen ? _aMem[Number(_aDr[w-1])] : _nMem[Number(_nDr[w-_aLen-1])];
+    }
+    return {...s, rName: nm};
+  });
+  const nextB = allSchedNamed.find(s => new Date(s.iso) > now && s.rName);
+  upd('home-cycle-next', nextB ? `Prochain : ${nextB.rName} — ${nextB.date}` : (cyclePct>=100 ? 'Cycle terminé !' : 'Prochain à venir'));
 
   // Section alerte jeudi
   const alertSec = document.getElementById('home-alert-section');
