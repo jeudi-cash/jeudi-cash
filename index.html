@@ -1001,7 +1001,23 @@ select{
   color:var(--t1);pointer-events:none;z-index:10;display:none;
   white-space:nowrap;box-shadow:var(--sh-md);
 }
-.ring-svg{transform:rotate(-90deg);}
+/* ── Anneau de progression ──
+   Sans fill:none, un <circle> SVG est rempli en noir par défaut : c'est ce qui
+   transformait l'anneau en disque opaque. Ces règles avaient disparu lors de la
+   consolidation du CSS. */
+.ring-wrap{display:flex;align-items:center;gap:18px;flex-wrap:wrap;}
+.ring-svg{transform:rotate(-90deg);flex-shrink:0;}
+.ring-bg{fill:none;stroke:var(--b1);stroke-width:8;}
+.ring-fill{
+  fill:none;stroke-width:8;stroke-linecap:round;
+  transition:stroke-dashoffset .8s ease,stroke .4s ease;
+}
+.ring-text{
+  fill:var(--t1);font-family:'Space Grotesk',sans-serif;font-weight:700;
+  font-size:17px;text-anchor:middle;dominant-baseline:central;
+  /* Le SVG entier est tourné de -90° : on remet le texte d'aplomb. */
+  transform:rotate(90deg);transform-origin:50px 50px;
+}
 .bar-chart{display:flex;flex-direction:column;gap:8px;}
 .bar-row{display:flex;align-items:center;gap:8px;}
 .bar-label{
@@ -2763,7 +2779,7 @@ select{
     <div class="dash-grid" style="margin-bottom:14px">
 
       <div class="dash-card">
-        <div class="dash-card-title">🎯 Progression des tirages</div>
+        <div class="dash-card-title">🧾 Réceptions du cycle</div>
         <div id="chart-tirages" style="width:100%"></div>
         <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--b1)">
           <div style="font-family:'JetBrains Mono',monospace;font-size:9px;color:var(--t3);letter-spacing:1px;text-transform:uppercase;margin-bottom:8px">Cotisations — Semaine en cours</div>
@@ -5170,6 +5186,24 @@ function nbCotisants(nomBenef) {
   return Math.max(0, total - membres.length);
 }
 
+// Fourchette réelle des pots du cycle (« 6 400–6 800 $ »).
+// Le pot n'est PAS une constante : il dépend de la taille de la famille du
+// bénéficiaire. Afficher un seul chiffre en en-tête contredit le calendrier.
+function potRangeStr() {
+  try {
+    const noms = [
+      ...(Array.isArray(G.anc.members)  ? G.anc.members  : Object.values(G.anc.members||{})),
+      ...(Array.isArray(G.nouv.members) ? G.nouv.members : Object.values(G.nouv.members||{}))
+    ].filter(n => n);
+    const pots = noms.map(n => potDuBenef(n)).filter(p => p > 0);
+    if (!pots.length) return potDuBenefStr();
+    const min = Math.min(...pots), max = Math.max(...pots);
+    return min === max
+      ? min.toLocaleString('fr-CA') + ' ' + DEVISE
+      : min.toLocaleString('fr-CA') + '–' + max.toLocaleString('fr-CA') + ' ' + DEVISE;
+  } catch(e) { return potDuBenefStr(); }
+}
+
 // ═══════════════════════════════════════════════════════════════
 //  SOURCE DE VÉRITÉ — QUI BÉNÉFICIE DE QUELLE SEMAINE
 // ═══════════════════════════════════════════════════════════════
@@ -5241,7 +5275,7 @@ function updateStats(){
   document.getElementById('st-anc').textContent=G.anc.members.length;
   document.getElementById('st-nouv').textContent=G.nouv.members.length;
   document.getElementById('st-total').textContent=totalMembers();
-  document.getElementById('st-pot').textContent=totalPot();
+  document.getElementById('st-pot').textContent=potRangeStr();
   document.getElementById('st-done').textContent=`${totalDone()}/${totalMembers()}`;
   document.getElementById('header-sub').textContent=`${G.anc.members.length} Anciens · ${G.nouv.members.length} Nouveaux · ${COTISATION} ${DEVISE}/sem.`;
   // Refresh home if active
@@ -5424,23 +5458,9 @@ function exportPDF() {
   const qrData    = encodeURIComponent('https://jeudi-cash.github.io/jeudi-cash');
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${qrData}&bgcolor=0a0a0a&color=F0B429&margin=8`;
 
-  // ── Pot par semaine : calculer la fourchette réelle (min–max) ──
+  // ── Pot par semaine : fourchette réelle (min–max), via le domaine ──
   const pot = potDuBenefStr();
-  let potRangeStr = pot;
-  try {
-    const allNames = [
-      ...(Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{})),
-      ...(Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}))
-    ].filter(n=>n);
-    const pots = allNames.map(n => potDuBenef(n)).filter(p => p > 0);
-    if (pots.length) {
-      const minP = Math.min(...pots);
-      const maxP = Math.max(...pots);
-      potRangeStr = minP === maxP
-        ? minP.toLocaleString('fr-CA') + ' $'
-        : minP.toLocaleString('fr-CA') + '–' + maxP.toLocaleString('fr-CA') + ' $';
-    }
-  } catch(e) {}
+  const potRangeStr_ = potRangeStr().replace(' ' + DEVISE, ' $');
 
   // ── Construire les lignes ──
   const buildRows = (g) => {
@@ -5687,7 +5707,7 @@ function exportPDF() {
     <div class="kpi-chip gold"><div class="kpi-v">${ancCount}</div><div class="kpi-l">Anciens</div></div>
     <div class="kpi-chip blue"><div class="kpi-v">${nouvCount}</div><div class="kpi-l">Nouveaux</div></div>
     <div class="kpi-chip gold"><div class="kpi-v">${totalMembers()}</div><div class="kpi-l">Total</div></div>
-    <div class="kpi-chip gold"><div class="kpi-v" style="font-size:13px">${potRangeStr}</div><div class="kpi-l">Pot / Sem.</div></div>
+    <div class="kpi-chip gold"><div class="kpi-v" style="font-size:13px">${potRangeStr_}</div><div class="kpi-l">Pot / Sem.</div></div>
     <div class="kpi-chip green"><div class="kpi-v">${paidCount}/${totalMembers()}</div><div class="kpi-l">Tirages</div></div>
     <div class="kpi-chip green"><div class="kpi-v">${confirmedCount}</div><div class="kpi-l">Confirmés</div></div>
   </div>
@@ -9931,13 +9951,21 @@ function renderDashboard() {
     return sum + nbCotisants(s.name) * COTISATION;
   }, 0);
 
-  // Total en retard = somme des déficits réels (montant dû − montant reçu)
-  // dans l'historique des réceptions confirmées
-  const totalEnRetard = receptionsHist.reduce((sum, r) => {
+  // ── ÉCARTS : deux natures très différentes ──
+  // • une CRÉANCE  : de l'argent encore attendu → figure dans « En retard »
+  // • une PERTE ACCEPTÉE : le groupe a soldé l'affaire → n'est plus réclamée,
+  //   mais reste enregistrée pour la transparence.
+  // Un écart est accepté quand r.ecartAccepte === true.
+  const ecartDe = (r) => {
     const du   = r.montantDu   || (nbCotisants(r.benefName) * COTISATION);
-    const recu = r.montantRecu || 0;
-    return sum + Math.max(0, du - recu);
-  }, 0);
+    return Math.max(0, du - (r.montantRecu || 0));
+  };
+  const totalEnRetard = receptionsHist
+    .filter(r => !r.ecartAccepte)
+    .reduce((sum, r) => sum + ecartDe(r), 0);
+  const pertesAcceptees = receptionsHist
+    .filter(r => r.ecartAccepte)
+    .reduce((sum, r) => sum + ecartDe(r), 0);
 
   // Montant récupérable = cotisations futures (avec bons pots)
   const montantRecuperable = semFutures.reduce((sum, s) => {
@@ -9949,8 +9977,12 @@ function renderDashboard() {
     return sum + potDuBenef(s.name);
   }, 0);
 
-  // Encore à distribuer = total du cycle − déjà distribué (cohérent)
-  const encoreADistribuer = Math.max(0, totalAttenduCycle - totalDistribue);
+  // Encore à distribuer = somme des pots des semaines à venir.
+  // ⚠️ NE PAS faire « totalAttenduCycle − totalDistribue » : cela soustrait
+  // du réel (ce qui a été reçu) d'un théorique (les pots parfaits), et
+  // reporte les écarts du passé sur le futur. Un manque d'hier n'est pas
+  // de l'argent à distribuer demain.
+  const encoreADistribuer = montantRecuperable;
 
   // Cashflow semaine en cours
   const allM     = cotisWeek ? cotisWeek.membersState : [];
@@ -9973,20 +10005,27 @@ function renderDashboard() {
   // KPI financiers
   upd('fin-total-recu', totalRecu>0 ? fmt(totalRecu) : '—');
   upd('fin-total-recu-sub', `${nbConfirmes} réception${nbConfirmes>1?'s':''} confirmée${nbConfirmes>1?'s':''}`);
-  const nbDeficits = receptionsHist.filter(r => {
-    const du = r.montantDu || (nbCotisants(r.benefName) * COTISATION);
-    return (du - (r.montantRecu||0)) > 0;
-  }).length;
+
+  // « En retard » = créances uniquement. Une perte acceptée par le groupe
+  // n'est plus réclamée : l'afficher en rouge rouvrirait une affaire close.
+  const creances = receptionsHist.filter(r => !r.ecartAccepte && ecartDe(r) > 0);
   upd('fin-total-retard', totalEnRetard>0 ? fmt(totalEnRetard) : '✅ 0');
-  upd('fin-total-retard-sub', totalEnRetard>0 ? `${nbDeficits} semaine${nbDeficits>1?'s':''} avec déficit` : 'Aucun retard détecté');
+  if (totalEnRetard > 0) {
+    upd('fin-total-retard-sub', `${creances.length} semaine${creances.length>1?'s':''} avec d\u00e9ficit \u00e0 recouvrer`);
+  } else if (pertesAcceptees > 0) {
+    // Rien à réclamer, mais on ne cache pas la perte pour autant.
+    upd('fin-total-retard-sub', `Aucune cr\u00e9ance \u00b7 ${fmt(pertesAcceptees)} de perte accept\u00e9e`);
+  } else {
+    upd('fin-total-retard-sub', 'Aucun retard détecté');
+  }
   upd('fin-recuperable', fmt(montantRecuperable));
   upd('fin-recuperable-sub', `${semFutures.length} semaine${semFutures.length>1?'s':''} restante${semFutures.length>1?'s':''}`);
 
   // KPI membres
   upd('kpi-total', total);
   updHTML('kpi-total-sub', `<span style="color:var(--ancien)">⭐${ancTotal}</span> · <span style="color:var(--nouveau)">🆕${nouvTotal}</span>`);
-  upd('kpi-pot', potSem > 0 ? potSem.toLocaleString('fr-CA') : '0');
-  updHTML('kpi-pot-sub', `<span style="color:var(--t3)">${DEVISE}</span>`);
+  upd('kpi-pot', potRangeStr().replace(' ' + DEVISE, ''));
+  updHTML('kpi-pot-sub', `<span style="color:var(--t3)">${DEVISE} · selon la famille</span>`);
   upd('kpi-done', pct + '%');
   updHTML('kpi-done-sub', `<span style="color:var(--t3)">${done}/${totalSemaines} semaines</span>`);
   upd('kpi-restant', remaining);
@@ -10077,13 +10116,21 @@ function renderDashboard() {
     }
   }, 150);
 
-  // ── GRAPHIQUE 3 — Donut tirages ──
+  // ── GRAPHIQUE 3 — Réceptions du cycle ──
+  // L'ancien donut additionnait des tirages (32+3) et des semaines restantes (24),
+  // soit 59 segments pour 35 tours — d'où des pourcentages incohérents. Et les
+  // tirages valent 35/35 en permanence : aucune information. Il surveille
+  // désormais les réceptions échues non confirmées, le vrai angle mort.
   setTimeout(() => {
+    const confirmes = semPassees.filter(s => receptionsHist.find(r => r.weekNum === s.week)).length;
+    const oublies   = Math.max(0, semPassees.length - confirmes);
+    const aVenir    = semFutures.length;
     drawDonutChart('chart-tirages', [
-      { label: '⭐ Anc. tirés',  value: ancDone,              color: '#F0B429' },
-      { label: '🆕 Nouv. tirés', value: nouvDone,             color: '#3B82F6' },
-      { label: 'Restants',       value: Math.max(0,remaining), color: '#1E1E1E' },
-    ], { size: 130, centerLabel: `${pct}%`, centerSub: 'fait' });
+      { label: '✅ Confirmées',   value: confirmes, color: '#00C896' },
+      { label: '⚠️ À confirmer',  value: oublies,   color: '#FF4D4D' },
+      { label: 'À venir',         value: aVenir,    color: '#1E1E1E' },
+    ].filter(s => s.value > 0),
+      { size: 130, centerLabel: `${confirmes}/${totalSemaines}`, centerSub: 'confirmées' });
   }, 100);
 
   // ── GRAPHIQUE 4 — Donut statuts paiements (semaine en cours, données réelles) ──
@@ -11525,6 +11572,24 @@ if (document.readyState === 'complete') {
 } else {
   window.addEventListener('load', demarrerApp);
 }
+
+// ═══════════════════════════════════════════════════════════
+//  POINT D'ACCÈS DIAGNOSTIC (utilisé par test.html) — LECTURE SEULE
+// ═══════════════════════════════════════════════════════════
+// Les variables de l'app sont déclarées en `let` : elles n'apparaissent
+// donc pas sur `window` et sont invisibles depuis une autre page.
+// Ces getters exposent leur valeur courante sans permettre de l'écrire.
+window.__diag = {
+  get G()              { return G; },
+  get cotisWeek()      { return cotisWeek; },
+  get receptionsHist() { return receptionsHist; },
+  get currentConfirm() { return currentConfirm; },
+  get COTISATION()     { return COTISATION; },
+  get DEVISE()         { return DEVISE; },
+  get startDate()      { return startDate; },
+  benefDeSemaine, tousLesTours, semaineActuelle,
+  totalMembers, getFamille, nbCotisants, potDuBenef
+};
 </script>
 </body>
 </html>
