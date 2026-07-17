@@ -5169,6 +5169,72 @@ function nbCotisants(nomBenef) {
   const { membres } = getFamille(nomBenef);
   return Math.max(0, total - membres.length);
 }
+
+// ═══════════════════════════════════════════════════════════════
+//  SOURCE DE VÉRITÉ — QUI BÉNÉFICIE DE QUELLE SEMAINE
+// ═══════════════════════════════════════════════════════════════
+// RÈGLE ABSOLUE : le bénéficiaire se résout TOUJOURS par
+//   drawn[position] → members[index].
+// On n'utilise JAMAIS schedule[i].name : doSwap n'échange que `drawn`,
+// donc un `name` stocké dans le schedule devient périmé au premier échange.
+// Le schedule ne sert QUE pour la date, ancrée à sa position.
+// Aucune autre partie du code ne doit refaire ce calcul à la main.
+
+function _grpData(g) {
+  return {
+    members: (Array.isArray(G[g].members) ? G[g].members : Object.values(G[g].members||{})).filter(n=>n),
+    drawn:   Array.isArray(G[g].drawn)    ? G[g].drawn    : Object.values(G[g].drawn||{}),
+    sched:   Array.isArray(G[g].schedule) ? G[g].schedule : Object.values(G[g].schedule||{})
+  };
+}
+
+// Bénéficiaire de la semaine N → { name, groupe, week, pos, date, iso, pot, cotisants }
+function benefDeSemaine(week) {
+  const w = Number(week);
+  if (!w || w < 1) return null;
+
+  const anc = _grpData('anc');
+  const ancLen = anc.members.length;
+  let src, pos, groupe;
+
+  if (w <= ancLen) {
+    src = anc; pos = w - 1; groupe = 'anc';
+  } else {
+    src = _grpData('nouv'); pos = w - ancLen - 1; groupe = 'nouv';
+  }
+
+  if (pos < 0 || pos >= src.drawn.length) return null;
+  const name = src.members[Number(src.drawn[pos])];
+  if (!name) return null;
+
+  const s = src.sched[pos] || {};
+  return {
+    name, groupe, week: w, pos,
+    date: s.date || '',
+    iso:  s.iso  || null,
+    pot:  potDuBenef(name),
+    cotisants: nbCotisants(name)
+  };
+}
+
+// Tous les tours du cycle (semaine 1 → dernière), dans l'ordre des semaines
+function tousLesTours() {
+  const total = totalMembers();
+  const out = [];
+  for (let w = 1; w <= total; w++) {
+    const b = benefDeSemaine(w);
+    if (b) out.push(b);
+  }
+  return out;
+}
+
+// Numéro de la semaine en cours, calculé par DATE (source de vérité)
+function semaineActuelle() {
+  const { thursday } = getCurrentWeekBounds();
+  const debut = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-07T12:00:00');
+  return Math.max(1, Math.round((thursday - debut) / (7*24*3600*1000)) + 1);
+}
+
 function totalDone(){return G.anc.drawn.length+G.nouv.drawn.length;}
 function totalPot(){return potDuBenefStr();}
 function updateStats(){
@@ -5728,11 +5794,12 @@ function onSwapMemberChange(side){
   const parts   = val.split('|');
   const gKey    = parts[0];
   const schedPos = parseInt(parts[1]);
-  const members  = Array.isArray(G[gKey].members)  ? G[gKey].members  : Object.values(G[gKey].members||{});
-  const drawn    = Array.isArray(G[gKey].drawn)    ? G[gKey].drawn    : Object.values(G[gKey].drawn||{});
-  const schedule = Array.isArray(G[gKey].schedule) ? G[gKey].schedule : Object.values(G[gKey].schedule||{});
-  const name    = members[Number(drawn[schedPos])] || '—';
-  const sched   = schedPos < schedule.length ? schedule[schedPos] : {};
+  // Convertir la position du groupe en numéro de semaine global, puis interroger la source de vérité
+  const ancLen  = (Array.isArray(G.anc.members) ? G.anc.members : Object.values(G.anc.members||{})).filter(n=>n).length;
+  const week    = gKey === 'anc' ? schedPos + 1 : ancLen + schedPos + 1;
+  const b       = benefDeSemaine(week);
+  const name    = b ? b.name : '—';
+  const sched   = { week: b ? b.week : null, date: b ? b.date : '' };
   const groupe  = gKey === 'anc' ? '⭐ Ancien' : '🆕 Nouveau';
 
   document.getElementById('preview-'+side).classList.add('visible');
@@ -7410,25 +7477,9 @@ function renderRecapFinSemaine() {
     var nonPayes = allM.filter(function(m) { return !m.paid; });
 
     // Trouver le prochain bénéficiaire (semaine suivante)
-    var prochainNom = '', prochainDate = '';
-    try {
-      var _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
-      var _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
-      var _aSch = (Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}));
-      var _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
-      var _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
-      var _nSch = (Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}));
-      var _aLen = _aMem.filter(function(n){return n;}).length;
-      var nextWeek = benef.week + 1;
-      if (nextWeek <= _aLen) {
-        prochainNom  = _aMem[Number(_aDr[nextWeek-1])] || '';
-        prochainDate = _aSch[nextWeek-1] ? _aSch[nextWeek-1].date : '';
-      } else {
-        var ni = nextWeek - _aLen - 1;
-        prochainNom  = _nMem[Number(_nDr[ni])] || '';
-        prochainDate = _nSch[ni] ? _nSch[ni].date : '';
-      }
-    } catch(e) {}
+    var suivant = _prochainBenef(benef.week);
+    var prochainNom  = suivant ? suivant.name : '';
+    var prochainDate = suivant ? suivant.date : '';
 
     var prochainSection = prochainNom
       ? '\n👉 *Prochain bénéficiaire :*\n🏆 ' + prochainNom + (prochainDate ? ' — ' + prochainDate : '') + '\n'
@@ -8341,33 +8392,16 @@ function renderHome() {
   upd('home-cotis-manque', `${(unpaid.length*COTISATION).toLocaleString('fr-CA')} ${DEVISE} manquant`);
 
   // Progression cycle = semaines réellement écoulées (par date), pas le nombre de tirages
-  const allSched = [...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{})),
-                   ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))]
-                  .filter(s=>s.iso)
-                  .sort((a,b)=>new Date(a.iso)-new Date(b.iso));
+  const tours = tousLesTours().filter(t => t.iso);
   const todayCycle = new Date(); todayCycle.setHours(23,59,59,0);
-  const semEcoulees = allSched.filter(s => new Date(s.iso) <= todayCycle).length;
-  const totalSem = allSched.length || total;
+  const semEcoulees = tours.filter(t => new Date(t.iso) <= todayCycle).length;
+  const totalSem = tours.length || total;
   const cyclePct = totalSem > 0 ? Math.round(semEcoulees/totalSem*100) : 0;
   const cycleBar = document.getElementById('home-cycle-bar');
   if (cycleBar) cycleBar.style.width = cyclePct + '%';
   upd('home-cycle-lbl', `${semEcoulees}/${totalSem}`);
-  // Résoudre les noms du prochain bénéficiaire via drawn
-  const _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
-  const _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
-  const _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
-  const _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
-  const _aLen = _aMem.filter(n=>n).length;
-  const allSchedNamed = allSched.map((s,i) => {
-    let nm = s.name;
-    if (!nm) {
-      const w = s.week || (i+1);
-      nm = w <= _aLen ? _aMem[Number(_aDr[w-1])] : _nMem[Number(_nDr[w-_aLen-1])];
-    }
-    return {...s, rName: nm};
-  });
-  const nextB = allSchedNamed.find(s => new Date(s.iso) > now && s.rName);
-  upd('home-cycle-next', nextB ? `Prochain : ${nextB.rName} — ${nextB.date}` : (cyclePct>=100 ? 'Cycle terminé !' : 'Prochain à venir'));
+  const nextB = tours.find(t => new Date(t.iso) > now);
+  upd('home-cycle-next', nextB ? `Prochain : ${nextB.name} — ${nextB.date}` : (cyclePct>=100 ? 'Cycle terminé !' : 'Prochain à venir'));
 
   // Section alerte jeudi
   const alertSec = document.getElementById('home-alert-section');
@@ -8923,53 +8957,24 @@ function getCurrentWeekBounds() {
 
 // ── Bénéficiaire de la semaine courante (lundi→dimanche) ──
 function getCurrentWeekBenef() {
-  const { thursday } = getCurrentWeekBounds();
+  const realWeekNum = semaineActuelle();
 
-  // Numéro de semaine depuis le 07 mai 2026
-  const realStart   = new Date(startDate ? startDate + 'T12:00:00' : '2026-05-07T12:00:00');
-  const diffMs      = thursday - realStart;
-  const realWeekNum = Math.max(1, Math.round(diffMs / (7*24*3600*1000)) + 1);
+  // ── 1. SOURCE DE VÉRITÉ : drawn + members via benefDeSemaine ──
+  const b = benefDeSemaine(realWeekNum);
+  if (b) {
+    return { name:b.name, groupe:b.groupe, week:b.week, date:b.date, montantDu:b.pot };
+  }
 
-  const ancMem   = (Array.isArray(G.anc.members)  ? G.anc.members  : Object.values(G.anc.members||{})).filter(n=>n);
-  const nouvMem  = (Array.isArray(G.nouv.members) ? G.nouv.members : Object.values(G.nouv.members||{})).filter(n=>n);
-  const ancDrawn = Array.isArray(G.anc.drawn)  ? G.anc.drawn  : Object.values(G.anc.drawn||{});
-  const nouvDrawn= Array.isArray(G.nouv.drawn) ? G.nouv.drawn : Object.values(G.nouv.drawn||{});
-  const ancSched = Array.isArray(G.anc.schedule)  ? G.anc.schedule  : Object.values(G.anc.schedule||{});
-  const nouvSched= Array.isArray(G.nouv.schedule) ? G.nouv.schedule : Object.values(G.nouv.schedule||{});
-  const ancLen   = ancMem.length;
-
-  // ── 1. currentConfirm ──
+  // ── 2. Filets de secours (uniquement si le tirage est absent pour cette semaine) ──
   if (currentConfirm?.weekNum === realWeekNum && currentConfirm?.benefName) {
     return { name:currentConfirm.benefName, groupe:currentConfirm.benefGroupe||'anc',
       week:realWeekNum, date:currentConfirm.weekDate||'', montantDu:potDuBenef(currentConfirm.benefName) };
   }
-
-  // ── 2. receptionsHist ──
   const rh = receptionsHist.find(r => r.weekNum === realWeekNum);
   if (rh?.benefName) {
     return { name:rh.benefName, groupe:rh.benefGroupe||'anc',
       week:realWeekNum, date:rh.weekDate||'', montantDu:potDuBenef(rh.benefName) };
   }
-
-  // ── 3. drawn + members par index (SOURCE FIABLE — lit le vrai bénéficiaire du schedule) ──
-  // (On ne se fie PAS à cotisWeek.benefExclus[0] qui contient juste le 1er membre de la famille)
-  const wn = realWeekNum;
-  let name = null, groupe = 'anc', date = '';
-  if (wn >= 1 && wn <= ancLen && ancDrawn.length >= wn) {
-    const memberIdx = Number(ancDrawn[wn - 1]);
-    name = ancMem[memberIdx];
-    date = ancSched[wn-1]?.date || '';
-    groupe = 'anc';
-  } else if (wn > ancLen) {
-    const nouvIdx = wn - ancLen - 1;
-    if (nouvIdx >= 0 && nouvIdx < nouvDrawn.length) {
-      const memberIdx = Number(nouvDrawn[nouvIdx]);
-      name = nouvMem[memberIdx];
-      date = nouvSched[nouvIdx]?.date || '';
-      groupe = 'nouv';
-    }
-  }
-  if (name) return { name, groupe, week:wn, date, montantDu:potDuBenef(name) };
 
   return null;
 }
@@ -9014,21 +9019,9 @@ function buildCotisWeek() {
     return;
   }
 
-  // Exclure le bénéficiaire RÉEL de cette semaine (résolu par position dans le schedule)
-  let benefName = benef ? benef.name : null;
-  // Vérifier via la position dans le schedule (source fiable après échanges)
-  const _ancMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
-  const _ancDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
-  const _nMem   = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
-  const _nDr    = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
-  const _ancLen = _ancMem.filter(n=>n).length;
-  if (weekNum >= 1 && weekNum <= _ancLen) {
-    const resolved = _ancMem[Number(_ancDr[weekNum-1])];
-    if (resolved) benefName = resolved;
-  } else if (weekNum > _ancLen) {
-    const resolved = _nMem[Number(_nDr[weekNum - _ancLen - 1])];
-    if (resolved) benefName = resolved;
-  }
+  // Exclure la famille du bénéficiaire RÉEL de cette semaine (source : benefDeSemaine)
+  const bSem = benefDeSemaine(weekNum);
+  const benefName = bSem ? bSem.name : (benef ? benef.name : null);
   const exclus = benefName ? getFamille(benefName).membres.map(n=>n.trim()) : [];
 
   // Garder TOUS les paiements existants (par nom) si même semaine
@@ -9902,24 +9895,8 @@ function renderDashboard() {
   const potSem   = total > 1 ? (total - 1) * COTISATION : total * COTISATION;
 
   // ── CALCULS FINANCIERS ──
-  const ancSched  = Array.isArray(G.anc.schedule)  ? G.anc.schedule  : Object.values(G.anc.schedule||{});
-  const nouvSched = Array.isArray(G.nouv.schedule) ? G.nouv.schedule : Object.values(G.nouv.schedule||{});
-  const ancDrawn  = Array.isArray(G.anc.drawn)     ? G.anc.drawn     : Object.values(G.anc.drawn||{});
-  const nouvDrawn = Array.isArray(G.nouv.drawn)    ? G.nouv.drawn    : Object.values(G.nouv.drawn||{});
-
-  // Reconstituer le schedule avec les vrais noms
-  const allSched = [
-    ...ancSched.map((s,i) => ({
-      ...s,
-      name: s.name || (i < ancDrawn.length ? ancMem[Number(ancDrawn[i])] : null),
-      week: s.week || (i+1)
-    })),
-    ...nouvSched.map((s,i) => ({
-      ...s,
-      name: s.name || (i < nouvDrawn.length ? nouvMem[Number(nouvDrawn[i])] : null),
-      week: s.week || (ancTotal+i+1)
-    }))
-  ].filter(s => s.name);
+  // Tous les tours résolus par la source de vérité (drawn → members)
+  const allSched = tousLesTours();
 
   const todayMid = new Date(today); todayMid.setHours(0,0,0,0);
 
@@ -10066,21 +10043,12 @@ function renderDashboard() {
 
   // ── GRAPHIQUE 1 — Pots distribués par semaine (barres) ──
   setTimeout(() => {
-    const _aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
-    const _nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
-    const _aDr  = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
-    const _nDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
-    const allSchedFin = [
-      ...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}))
-         .map((s,i)=>({...s, name: s.name || _aMem[Number(_aDr[i])], week: s.week||(i+1)})),
-      ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))
-         .map((s,i)=>({...s, name: s.name || _nMem[Number(_nDr[i])], week: s.week||(_aMem.filter(n=>n).length+i+1)}))
-    ].filter(s=>s.name).sort((a,b)=>a.week-b.week).slice(0, 12);
+    const allSchedFin = tousLesTours().slice(0, 12);
     const finData = allSchedFin.map(s => ({
       label: `#${s.week} ${s.name?.split(' ')[0]||''}`,
-      value: potDuBenef(s.name),
-      color: s.name && receptionsHist.find(r=>r.weekNum===s.week) ? '#00C896' :
-             s.name && new Date(s.iso) < today ? '#F0B429' : '#3B82F6'
+      value: s.pot,
+      color: receptionsHist.find(r=>r.weekNum===s.week) ? '#00C896' :
+             (s.iso && new Date(s.iso) < today) ? '#F0B429' : '#3B82F6'
     }));
     if (finData.length) drawBarChart('chart-finances', finData, {suffix: DEVISE, height: 160});
   }, 100);
@@ -10157,19 +10125,8 @@ function renderDashboard() {
   // Timeline prochains bénéficiaires
   const timeline = document.getElementById('next-benef-timeline');
   if(timeline){
-    const _ancMem  = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{}));
-    const _nouvMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{}));
-    const _ancDr   = (Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{}));
-    const _nouvDr  = (Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{}));
-    const allSc = [
-      ...(Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{}))
-         .map((s,i)=>({...s, groupe:'anc',  name: s.name || _ancMem[Number(_ancDr[i])], week: s.week||(i+1)})),
-      ...(Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{}))
-         .map((s,i)=>({...s, groupe:'nouv', name: s.name || _nouvMem[Number(_nouvDr[i])], week: s.week||(_ancMem.filter(n=>n).length+i+1)}))
-    ].filter(s=>s.name).sort((a,b)=>{
-      const da = a.iso ? new Date(a.iso).getTime() : 0;
-      const db = b.iso ? new Date(b.iso).getTime() : 0;
-      return da - db;
+    const allSc = tousLesTours().filter(s=>s.iso).sort((a,b)=>{
+      return new Date(a.iso).getTime() - new Date(b.iso).getTime();
     });
 
     const { monday, sunday } = getCurrentWeekBounds();
@@ -10560,27 +10517,9 @@ ${pied}`;
   box.textContent = msg;
 }
 
-// Prochain bénéficiaire après une semaine donnée (résolu via drawn + schedule)
+// Prochain bénéficiaire après une semaine donnée
 function _prochainBenef(apresWeek) {
-  try {
-    const aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{})).filter(n=>n);
-    const aDr  = Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{});
-    const aSch = Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{});
-    const nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{})).filter(n=>n);
-    const nDr  = Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{});
-    const nSch = Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{});
-    const w = apresWeek + 1;
-    if (w >= 1 && w <= aMem.length) {
-      const nm = aMem[Number(aDr[w-1])];
-      return nm ? { name: nm, date: aSch[w-1]?.date || '', week: w } : null;
-    }
-    const ni = w - aMem.length - 1;
-    if (ni >= 0 && ni < nDr.length) {
-      const nm = nMem[Number(nDr[ni])];
-      return nm ? { name: nm, date: nSch[ni]?.date || '', week: w } : null;
-    }
-  } catch(e) {}
-  return null;
+  return benefDeSemaine(Number(apresWeek) + 1);
 }
 
 function copyResumeMsg() {
