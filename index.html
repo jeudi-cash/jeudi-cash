@@ -10463,28 +10463,124 @@ function generateResumeMsg() {
   const today  = new Date().toLocaleDateString('fr-CA', {weekday:'long', day:'2-digit', month:'long', year:'numeric'});
   const weekNum= cotisWeek?.weekNum || 0;
 
-  const msg =
-`🏦 *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')}*
-📅 ${today}
-${benef ? `
+  const entete = `🏦 *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')}*\n📅 ${today}`;
+  const pied   = `_Jeudi Cash — Tontine officielle_ 🏦`;
+
+  if (!benef) {
+    box.textContent = `${entete}\n\nAucun bénéficiaire défini pour cette semaine.\n\n${pied}`;
+    return;
+  }
+
+  // Détail du calcul — transparence : jamais un montant sans son calcul
+  const nbCot   = nbCotisants(benef.name);
+  const exclus  = (cotisWeek?.benefExclus || []).map(n => n.replace(/\s+/g,' ').trim());
+  const calcul  = `🧮 Détail : ${nbCot} cotisants × ${COTISATION} $`;
+  const ligneEx = exclus.length
+    ? `\n⏸️ Exclus cette semaine : ${exclus.join(', ')} (famille du bénéficiaire)`
+    : '';
+
+  // La réception de cette semaine est-elle confirmée ?
+  const conf = receptionsHist.find(r => r.weekNum === weekNum);
+
+  let msg;
+
+  if (conf) {
+    // ── ÉTAT 3 : remise confirmée ──
+    const du      = conf.montantDu || (nbCot * COTISATION);
+    const recu    = conf.montantRecu || 0;
+    const complet = recu >= du;
+    const nbTours = receptionsHist.length;
+    const totalDistr = receptionsHist.reduce((s,r) => s + (r.montantRecu||0), 0);
+    const next    = _prochainBenef(weekNum);
+
+    msg = complet
+      ? `✅ *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')} · Remise confirmée*
+
 🏆 Bénéficiaire : *${benef.name}*
-💰 Montant : *${potStr}*${interac ? `\n📱 *Numéro Interac (dépôt direct) : ${interac}*` : ''}
-` : ''}
-📊 *STATUT DES COTISATIONS (${paid.length}/${allM.length})*
+💰 Montant remis : *${recu.toLocaleString('fr-CA')} $ ${DEVISE}*
+📅 Date : ${benef.date || today}
+${calcul}
+🧾 Confirmé par l'administration
+
+📊 Depuis le début : ${nbTours} tour${nbTours>1?'s':''} · ${totalDistr.toLocaleString('fr-CA')} $ ${DEVISE} distribués${next ? `
+
+👉 Prochain : *${next.name}* — ${next.date} (${potDuBenefStr(next.name)})` : ''}
+
+Merci à toutes et à tous pour votre ponctualité. 🙏
+
+${pied}`
+      : `⚠️ *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')} · Remise partielle*
+
+🏆 Bénéficiaire : *${benef.name}*
+💰 Montant remis : *${recu.toLocaleString('fr-CA')} $* sur *${du.toLocaleString('fr-CA')} $* attendus
+📉 Écart : *${(du-recu).toLocaleString('fr-CA')} $* — ${Math.round((du-recu)/COTISATION)} cotisation(s) non reçue(s)
+🔄 Statut : régularisation en cours
+
+${benef.name} a été informé(e). Le solde sera versé dès réception.
+
+${pied}`;
+
+  } else if (unpaid.length === 0 && allM.length > 0) {
+    // ── ÉTAT 2 : collecte complète, virement à venir ──
+    msg = `🔒 *JEUDI CASH — Semaine #${String(weekNum).padStart(3,'0')} · Collecte complète*
+📅 ${today}
+
+✅ *${paid.length} / ${allM.length} membres ont cotisé*
+💰 Total collecté : *${(paid.length * COTISATION).toLocaleString('fr-CA')} $ ${DEVISE}*
+${calcul}${ligneEx}
+
+👉 Le virement à *${benef.name}* sera effectué aujourd'hui.
+Une confirmation sera publiée dès réception.
+
+Merci à toutes et à tous. 🙏
+
+${pied}`;
+
+  } else {
+    // ── ÉTAT 1 : collecte en cours ──
+    msg = `${entete}
+
+🏆 Bénéficiaire : *${benef.name}*
+💰 Montant attendu : *${potStr}*
+${calcul}${ligneEx}${interac ? `\n📱 *Numéro Interac (dépôt direct) : ${interac}*` : ''}
+
+📊 *COTISATIONS : ${paid.length}/${allM.length}*
 
 ✅ *Payés (${paid.length}) :*
 ${paid.length ? paid.map(m=>`   ✅ ${m.name}`).join('\n') : '   Aucun encore'}
 
-❌ *En attente (${unpaid.length}) :*
-${unpaid.length ? unpaid.map(m=>`   ❌ ${m.name}`).join('\n') : '   Tout le monde a payé ! 🎉'}
+⏳ *En attente (${unpaid.length}) :*
+${unpaid.map(m=>`   ⏳ ${m.name}`).join('\n')}
 
-${unpaid.length > 0
-  ? `⚠️ Merci d'effectuer votre virement dès aujourd'hui.`
-  : `🎉 *Tous les virements sont reçus !* Merci à tous 🙏`}
+Merci d'effectuer votre virement dès aujourd'hui. Chaque cotisation compte. 🙏
 
-_Jeudi Cash — Tontine officielle_ 🏦`;
+${pied}`;
+  }
 
   box.textContent = msg;
+}
+
+// Prochain bénéficiaire après une semaine donnée (résolu via drawn + schedule)
+function _prochainBenef(apresWeek) {
+  try {
+    const aMem = (Array.isArray(G.anc.members)?G.anc.members:Object.values(G.anc.members||{})).filter(n=>n);
+    const aDr  = Array.isArray(G.anc.drawn)?G.anc.drawn:Object.values(G.anc.drawn||{});
+    const aSch = Array.isArray(G.anc.schedule)?G.anc.schedule:Object.values(G.anc.schedule||{});
+    const nMem = (Array.isArray(G.nouv.members)?G.nouv.members:Object.values(G.nouv.members||{})).filter(n=>n);
+    const nDr  = Array.isArray(G.nouv.drawn)?G.nouv.drawn:Object.values(G.nouv.drawn||{});
+    const nSch = Array.isArray(G.nouv.schedule)?G.nouv.schedule:Object.values(G.nouv.schedule||{});
+    const w = apresWeek + 1;
+    if (w >= 1 && w <= aMem.length) {
+      const nm = aMem[Number(aDr[w-1])];
+      return nm ? { name: nm, date: aSch[w-1]?.date || '', week: w } : null;
+    }
+    const ni = w - aMem.length - 1;
+    if (ni >= 0 && ni < nDr.length) {
+      const nm = nMem[Number(nDr[ni])];
+      return nm ? { name: nm, date: nSch[ni]?.date || '', week: w } : null;
+    }
+  } catch(e) {}
+  return null;
 }
 
 function copyResumeMsg() {
